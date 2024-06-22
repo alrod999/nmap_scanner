@@ -1,0 +1,6 @@
+venv/
+logs/
+tmp/
+.idea/
+__pycache__/
+example.db

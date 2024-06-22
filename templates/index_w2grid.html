@@ -1,0 +1,66 @@
+{%extends 'base_w2grid.html'%}
+    {%block html_body%}
+        <div id="buttonbar" style="margin-left: 20px; margin-right: 20px;">
+            <button class="w2ui-btn" onclick="w2alert(w2ui.grid.getSelection());">Details</button>
+        </div>
+        <div style="height: 4px;"></div>
+        <div id="main" style=" height: 800px; margin-left: 20px; margin-right: 20px;"></div>
+        <br>
+        <script type="text/javascript">
+            var config = {
+                layout: {
+                    name: 'layout',
+                    padding: 4,
+                    panels: [
+                        { type: 'top', size: '80%', resizable: true, minSize: 100},
+                        {type: 'main', resizable: true, minSize: 100, content:  '<div id="detail"> select a line </div>'}
+                    ]
+                },
+                grid: {
+                    name: 'grid',
+                    reorderColumns: true,
+                    header: 'List of AUDC hosts',
+                    multiSearch: true,
+                    method: 'GET', // need this to avoid 412 error on Safari
+                    show: {
+                        header:         false,
+                        footer:         true,
+                        lineNumbers:    false,
+                        selectColumn:   true,
+                        expandColumn:   false,
+                        toolbar:        true,
+                        toolbarReload   : false,
+                        toolbarColumns  : true,
+                        toolbarSearch   : true,
+                        toolbarAdd      : false,
+                        toolbarDelete   : true,
+                        toolbarSave     : true
+                    },
+                    url  : {
+                        remove : '{{action_page}}/_action',
+                        save   : '{{action_page}}/_action'
+                    },
+                    searches: [ {{ search_str|safe }} ],
+                    columns: [ {{ columns_str|safe }} ],
+                    {{ records_str|safe }}
+                }
+            }
+            $(function () {
+                // initialization
+                $('#main').w2layout(config.layout);
+                w2ui.layout.html('top', $().w2grid(config.grid));
+                //w2ui.layout.html('main', 'select a line to see details');
+                w2ui.grid.on('select',
+                    function(event) {
+                        //w2ui.layout.html('main', 'Selected something!');
+                        //w2ui.layout.load('main', '/details');
+                        event.onComplete = function() {
+                            var selection = w2ui.grid.getSelection().toString();
+                            w2ui.layout.load('main',
+                                '/details?ip='+selection.split(",").pop());
+                        }
+                    }
+                );
+            });
+        </script>
+    {%endblock html_body%}
