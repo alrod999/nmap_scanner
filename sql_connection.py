@@ -1,13 +1,14 @@
 import sqlite3
 from datetime import datetime
 import logging
-from NetScanerGlobals import *
+from configuration import *
 
 log = logging.getLogger('sql')
 
+
 class SqlConnection:
 
-    def __init__(self, db='example.db'):
+    def __init__(self, db='net_scan_data.db'):
         self.conn = sqlite3.connect(db)
         self.cursor = self.conn.cursor()
         self.cursor.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='hosts'")
@@ -23,7 +24,7 @@ class SqlConnection:
         if not self.cursor.execute('PRAGMA table_info(alive_networks)').fetchall():
             log.info('Create "alive_networks" table')
             self.cursor.execute(f'''
-                CREATE TABLE alive_networks (network char(20) primary key, hosts integer)
+                CREATE TABLE alive_networks (network char(20) primary key, hosts integer, audc integer)
             ''')
         if not self.cursor.execute('PRAGMA table_info(b_networks)').fetchall():
             log.info('Create "b_networks" table')

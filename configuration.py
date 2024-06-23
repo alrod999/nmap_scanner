@@ -18,8 +18,11 @@ class ScanMode(Enum):
 
 scan_mode = ScanMode.SELECTED
 
-log_files_path = Path(__file__).parent/ 'logs'
-if not log_files_path.exists(): log_files_path.mkdir()
+log_files_path = Path(__file__).parent / 'logs'
+log_files_path.mkdir(exist_ok=True)
+tmp_folder_path = Path(__file__).parent / 'tmp'
+tmp_folder_path.mkdir(exist_ok=True)
+
 log_file = os.path.join(log_files_path, 'netscan_main_log.txt')
 
 selected_b_networks = [
@@ -75,6 +78,7 @@ sql_fields = {
     'description': 'char(512)',
     'updated': 'date',
     'web_server': 'char(32)',
+    'audc': 'int',
     }
 fields_defaults = {}
 for prot in check_ports_dict:

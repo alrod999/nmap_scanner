@@ -1,8 +1,8 @@
 import time
 from datetime import datetime
 from multiprocessing import Process
-from NetScanerGlobals import *
-from SqlConnection import SqlConnection
+from configuration import *
+from sql_connection import SqlConnection
 from refresher import search_for_dead
 from scanner import scan_networks
 from audc_scanner import run_audc_scanner

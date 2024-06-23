@@ -4,9 +4,9 @@ import time
 import os
 import ipaddress
 from datetime import datetime
-from SqlConnection import SqlConnection
-from NetScanerGlobals import config_logger, filter_os_for_AUDC_scan, log_files_path
-from SqlConnection import remove_bad_symbols
+from sql_connection import SqlConnection
+from configuration import config_logger, filter_os_for_AUDC_scan, log_files_path
+from sql_connection import remove_bad_symbols
 
 INTER_SCAN_DELAY = 1200
 
@@ -48,8 +48,9 @@ async def set_concurrent_clients(hosts):
 
 def run_audc_scanner(one_loop=False):
 
-    log_file = os.path.join(log_files_path,'NetScanner_audc_scanner.log')
+    log_file = os.path.join(log_files_path, 'NetScanner_audc_scanner.log')
     log = config_logger(log_file, logger_name='audc_sc')
+
     def print(msg, *args, **kwargs):
         log.info(msg)
 

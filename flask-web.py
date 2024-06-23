@@ -1,8 +1,8 @@
 import json
 import os
 from flask import Flask, render_template, request, jsonify
-from SqlConnection import SqlConnection
-from NetScanerGlobals import config_logger, log_files_path
+from sql_connection import SqlConnection
+from configuration import config_logger, log_files_path
 
 log_file = os.path.join(log_files_path, 'web_app.log')
 config_logger(log_file, 'web_app')

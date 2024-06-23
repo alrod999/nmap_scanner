@@ -1,13 +1,15 @@
 import time
 import os
+from pathlib import Path
+from logging import Logger
 import subprocess
 from datetime import datetime
-from NetScanerGlobals import *
-from SqlConnection import SqlConnection
+import configuration as cnf
+from sql_connection import SqlConnection
 
 
-def update_host_status(xml_res_file, log):
-    rt = XmlParser(xml_res_file)
+def update_host_status(xml_res_file: Path | str, log: Logger) -> set[str]:
+    rt = cnf.XmlParser(xml_res_file)
     count = 0
     ip_set = set()
     for host in rt.root.findall('host'):
@@ -23,13 +25,13 @@ def update_host_status(xml_res_file, log):
     return ip_set
 
 
-def search_for_dead(one_cycle=False):
-    log_file = os.path.join(log_files_path, 'NetScanner_refresher.log')
-    xml_res_file = 'tmp/nmap_search_for_dead.xml'
-    temp_hosts_nmap = 'tmp/temp_hosts_nmap.txt'
+def search_for_dead(one_cycle: bool = False) -> None:
+    log_file = os.path.join(cnf.log_files_path, 'NetScanner_refresher.log')
+    xml_res_file = cnf.tmp_folder_path / 'nmap_search_for_dead.xml'
+    temp_hosts_nmap = cnf.tmp_folder_path / 'temp_hosts_nmap.txt'
 
     # log = config_logger(log_file)
-    log = config_logger(file=log_file, logger_name='refresher')
+    log = cnf.config_logger(file=log_file, logger_name='refresher')
 
     def print(msg, *args, **kwargs):
         log.info(msg)
@@ -46,10 +48,10 @@ def search_for_dead(one_cycle=False):
             sql_tuples = sql_tuples_up + sql_tuples_down
             all_ips = len(sql_tuples)
             log.info(f'Found {all_ips} hosts')
-            for i in range(0, all_ips, search_for_dead_burst):
+            for i in range(0, all_ips, cnf.search_for_dead_burst):
                 current_date = datetime.now().strftime("%Y-%b-%d %H:%M:%S")
                 with open(temp_hosts_nmap, 'w') as fh:
-                    for ipv4, in sql_tuples[i:i + search_for_dead_burst]:
+                    for ipv4, in sql_tuples[i:i + cnf.search_for_dead_burst]:
                         fh.write(f'{ipv4} ')
                         hosts_ip_set.add(ipv4)
                 log.info(f'Process [{i}:{i + 256}] hosts in the "hosts" table')
@@ -70,7 +72,7 @@ def search_for_dead(one_cycle=False):
                 else:
                     log.info(f'The scanning hosts states passed successfully')
                 alive_ip_set |= update_host_status(xml_res_file, log=log)
-                time.sleep(search_for_dead_period)
+                time.sleep(cnf.search_for_dead_period)
 
             dead_ip_set = hosts_ip_set - alive_ip_set
             log.debug(f'dead ips:\n{dead_ip_set}')
