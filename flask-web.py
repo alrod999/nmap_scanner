@@ -125,12 +125,13 @@ def tables(table_name=None):
     for header in headers:
         search_list.append(f"{{field: '{header}', label: '{header.title()} ', type: 'text', operator: 'contains'}}")
     search_str = ',\n'.join(search_list)
-    return render_template('index_w2grid.html',
-                           columns_str=columns_str,
-                           records_str=records_str,
-                           search_str=search_str,
-                           action_page=table_name,
-                           )
+    return render_template(
+        'index_w2grid.html',
+        columns_str=columns_str,
+        records_str=records_str,
+        search_str=search_str,
+        action_page=table_name,
+    )
 
 
 @app.route('/')

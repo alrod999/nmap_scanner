@@ -25,7 +25,7 @@ tmp_folder_path.mkdir(exist_ok=True)
 
 log_file = os.path.join(log_files_path, 'netscan_main_log.txt')
 
-selected_b_networks = [
+selected_b_networks = (
     '10.3',
     '10.17',
     '10.15',
@@ -34,7 +34,7 @@ selected_b_networks = [
     '10.31',
     '10.33',
     '172.17',
-    ]
+)
 alive_net_refresh_period = 21600  # in seconds
 search_for_dead_period = 5
 search_for_dead_burst = 2
