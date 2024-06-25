@@ -5,7 +5,7 @@ from sql_connection import SqlConnection
 from configuration import config_logger, log_files_path
 
 log_file = os.path.join(log_files_path, 'web_app.log')
-config_logger(log_file, 'web_app')
+config_logger(log_file, logger_name='web_app')
 
 show_list = ['ipv4', 'name', 'os', 'owner', 'status', 'type', 'productType', 'version',
              'updated',  'ssh', 'http', 'rdp', 'https', 'description']
@@ -26,11 +26,10 @@ params_attr = {
     'ssh': "size: '40px', attr: 'align=center',",
     'http': "size: '40px', attr: 'align=center',",
     'https': "size: '50px', attr: 'align=center',",
-    'description': "size: '120px', attr: 'align=left',",
+    'description': "size: '120px', attr: 'align=left', editable: {type: 'text'},",
     }
 
 defaut_attr = "size: '80px',"
-
 app = Flask(__name__)
 
 
@@ -39,11 +38,12 @@ def details():
     ipv4 = request.args['ip']
     sql = SqlConnection()
     result = sql.cursor.execute(f'SELECT name,owner,type,os,version FROM hosts WHERE ipv4="{ipv4}"').fetchall()
-    return render_template('DetailsSummary.html',
-                           host_details=f'{ipv4}',
-                           host_links=f'host links {ipv4}',
-                           audc_summary='AUDC summary'
-                           )
+    return render_template(
+        'DetailsSummary.html',
+        host_details=f'{ipv4}',
+        host_links=f'host links {ipv4}',
+        audc_summary='AUDC summary'
+    )
 
 
 @app.route('/hosts/_action')
@@ -132,6 +132,13 @@ def tables(table_name=None):
         search_str=search_str,
         action_page=table_name,
     )
+
+
+@app.route('/_add_new', methods=['GET', 'POST'])
+def _add_new():
+    content = request.json
+    print(content)
+    return
 
 
 @app.route('/')

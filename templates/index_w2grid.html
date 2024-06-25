@@ -6,7 +6,7 @@
             <button class="w2ui-btn" onclick="window.location.href='/tables/b_networks'">Found B networks</button>
         </div>
         <div style="height: 4px;"></div>
-        <div id="main" style=" height: 800px; margin-left: 20px; margin-right: 20px;"></div>
+        <div id="main" style="height: 800px; margin-left: 20px; margin-right: 20px;"></div>
         <br>
         <script type="text/javascript">
             var config = {
@@ -40,10 +40,16 @@
                     },
                     url  : {
                         remove : '{{action_page}}/_action',
-                        save   : '{{action_page}}/_action'
+                        save   : '{{action_page}}/_action',
                     },
                     searches: [ {{ search_str|safe }} ],
                     columns: [ {{ columns_str|safe }} ],
+                    onAdd: function (event) {
+                        w2popup.open({
+                            title: 'Popup Title',
+                            text: 'This is text inside the popup'
+                        })
+                    },
                     {{ records_str|safe }}
                 }
             }
