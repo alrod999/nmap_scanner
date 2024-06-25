@@ -1,7 +1,9 @@
 {%extends 'base_w2grid.html'%}
     {%block html_body%}
         <div id="buttonbar" style="margin-left: 20px; margin-right: 20px;">
-            <button class="w2ui-btn" onclick="w2alert(w2ui.grid.getSelection());">Details</button>
+            <button class="w2ui-btn" onclick="window.location.href='/'">Home</button>
+            <!--- <button class="w2ui-btn" onclick="w2alert(w2ui.grid.getSelection());">Details</button> --->
+            <button class="w2ui-btn" onclick="window.location.href='/tables/b_networks'">Found B networks</button>
         </div>
         <div style="height: 4px;"></div>
         <div id="main" style=" height: 800px; margin-left: 20px; margin-right: 20px;"></div>

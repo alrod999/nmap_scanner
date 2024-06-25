@@ -26,9 +26,10 @@ tmp_folder_path.mkdir(exist_ok=True)
 log_file = os.path.join(log_files_path, 'netscan_main_log.txt')
 
 selected_b_networks = (
-    '10.3',
+    '10.8',
     '10.17',
     '10.15',
+    '10.3',
     '10.4',
     '10.7',
     '10.31',
