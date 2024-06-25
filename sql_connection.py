@@ -1,7 +1,7 @@
 import sqlite3
 from datetime import datetime
 import logging
-from configuration import *
+import configuration as cfg
 
 log = logging.getLogger('sql')
 
@@ -17,7 +17,7 @@ class SqlConnection:
             log.info('CREATE new SQL table "hosts"')
             self.cursor.execute(f'''
                 CREATE TABLE hosts ({", ".join(
-                [f"{key} {sql_fields[key]}" for key in sql_fields]
+                [f"{key} {cfg.sql_fields[key]}" for key in cfg.sql_fields]
             )})
             ''')
 
@@ -29,7 +29,7 @@ class SqlConnection:
         if not self.cursor.execute('PRAGMA table_info(b_networks)').fetchall():
             log.info('Create "b_networks" table')
             self.cursor.execute(f'''
-                CREATE TABLE b_networks (network char(20) primary key, hosts integer)
+                CREATE TABLE b_networks (network char(20) primary key, hosts integer, updated date
             ''')
 
     def update_hosts_table(self, host_obj, current_date=None, commit=True):
@@ -39,8 +39,8 @@ class SqlConnection:
         if not self.cursor.execute(
                 f"UPDATE hosts SET {sql_params},updated='{current_date}' WHERE ipv4='{host_obj['ipv4']}'"
         ).rowcount:
-            for key in fields_defaults:
-                if not host_obj.get(key): host_obj[key] = fields_defaults[key]
+            for key in cfg.fields_defaults:
+                if not host_obj.get(key): host_obj[key] = cfg.fields_defaults[key]
             sql_params = ', '.join([f"'{host_obj[key]}'" for key in host_obj])
             self.cursor.execute(
                 f"INSERT INTO hosts ({', '.join([*host_obj])}, updated) VALUES ({sql_params},'{current_date}')"
@@ -68,12 +68,12 @@ class SqlConnection:
 
     def get_hosts(self, ordered=True):
         if ordered:
-            return self.cursor.execute(f"SELECT {hosts_names_str} FROM hosts").fetchall()
+            return self.cursor.execute(f"SELECT {cfg.hosts_names_str} FROM hosts").fetchall()
         return self.cursor.execute("SELECT * FROM hosts").fetchall()
 
     def get_all_rows_in_table(self, table, ordered=True):
         if ordered and table == 'hosts':
-            return self.cursor.execute(f"SELECT {hosts_names_str} FROM {table}").fetchall()
+            return self.cursor.execute(f"SELECT {cfg.hosts_names_str} FROM {table}").fetchall()
         return self.cursor.execute(f"SELECT * FROM {table}").fetchall()
 
     def get_table_header(self, table):
@@ -81,7 +81,7 @@ class SqlConnection:
 
     @staticmethod
     def get_hosts_ordered_header():
-        return hosts_names_str.split(',')
+        return cfg.hosts_names_str.split(',')
 
     def __del__(self):
         self.conn.close()
