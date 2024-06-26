@@ -158,11 +158,11 @@ def _add_new():
     # decoded_response = unquote(response)
 
     if request.method == 'POST':
-        logger.info('it is POST')
         # logger.info(request.args)
         req_json = re.sub(r'request=', '', unquote_plus(request.get_data(as_text=True,)))
         data = json.loads(req_json.lower())['record']
-        logger.info(f'{data}, \n{[*data]}')
+        data['status'] = 'down'
+        logger.debug(f'{data}, \n{[*data]}')
         sql = SqlConnection()
         sql.update_hosts_table(data)
         return jsonify({"status": "success"}), 200
