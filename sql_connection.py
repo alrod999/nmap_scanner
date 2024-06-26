@@ -83,8 +83,16 @@ class SqlConnection:
     def get_hosts_ordered_header():
         return cfg.hosts_names_str.split(',')
 
+    def delete_row(self, table, filter) -> None:
+        self.cursor.execute(f'DELETE FROM {table} WHERE {filter}')
+        self.conn.commit()
+
+    def delete_host(self, ipv4) ->  None:
+        self.delete_row('hosts', f'ipv4="{ipv4}"')
+
     def __del__(self):
-        self.conn.close()
+        if self.conn:
+            self.conn.close()
 
 
 def remove_bad_symbols(my_str):

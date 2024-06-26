@@ -1,11 +1,22 @@
 import json
+import logging
+import re
+from urllib.parse import unquote_plus
 import os
-from flask import Flask, render_template, request, jsonify
+from flask import (Flask, render_template, request, jsonify, redirect, url_for)
 from sql_connection import SqlConnection
 from configuration import config_logger, log_files_path
 
 log_file = os.path.join(log_files_path, 'web_app.log')
 config_logger(log_file, logger_name='web_app')
+
+
+# Create a logger
+logger = logging.getLogger('Flask_logger')
+logger.setLevel(logging.DEBUG)  # Set the log level
+file_handler = logging.FileHandler(log_file)
+file_handler.setLevel(logging.DEBUG)  # Set the log level
+logger.addHandler(file_handler)
 
 show_list = ['ipv4', 'name', 'os', 'owner', 'status', 'type', 'productType', 'version',
              'updated',  'ssh', 'http', 'rdp', 'https', 'description']
@@ -57,18 +68,19 @@ def table_action_bnetworks():
 
 
 def treat_action(table, request):
-    print(request)
+    logger.debug(request)
     request_dict = json.loads(request)
     sql = SqlConnection()
-    if request_dict['action'] == 'save':
+    action = request_dict['action']
+    if action == 'save':
         for host in request_dict['changes']:
             if table == 'hosts':
                 filter = f"ipv4 = '{host['recid']}'"
+                ipv4 = host['recid']
             elif table == 'b_networks':
                 filter = f"network = '{host['recid']}'"
             else:
                 raise Exception(f'Wrong table {table}')
-
             del host['recid']
             sql.update_table(
                 table,
@@ -76,7 +88,12 @@ def treat_action(table, request):
                 [host[key] for key in host],
                 filter,
             )
-
+    elif action == 'delete':
+        for host in request_dict["recid"]:
+            logger.info(f'====remove "{host=}"')
+            sql.delete_host(host)
+    else:
+        logger.error(f'Wrong action {request_dict["action"]}')
     return jsonify({"status": "success"}), 200
 
 
@@ -136,9 +153,22 @@ def tables(table_name=None):
 
 @app.route('/_add_new', methods=['GET', 'POST'])
 def _add_new():
-    content = request.json
-    print(content)
-    return
+
+    # Assuming 'response' is the URL encoded string
+    # decoded_response = unquote(response)
+
+    if request.method == 'POST':
+        logger.info('it is POST')
+        # logger.info(request.args)
+        req_json = re.sub(r'request=', '', unquote_plus(request.get_data(as_text=True,)))
+        data = json.loads(req_json.lower())['record']
+        logger.info(f'{data}, \n{[*data]}')
+        sql = SqlConnection()
+        sql.update_hosts_table(data)
+        return jsonify({"status": "success"}), 200
+    else:
+        logger.info(request.method )
+        return render_template('add_new_record.html',)
 
 
 @app.route('/')

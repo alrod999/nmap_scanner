@@ -3,7 +3,7 @@
         <div id="buttonbar" style="margin-left: 20px; margin-right: 20px;">
             <button class="w2ui-btn" onclick="window.location.href='/'">Home</button>
             <!--- <button class="w2ui-btn" onclick="w2alert(w2ui.grid.getSelection());">Details</button> --->
-            <button class="w2ui-btn" onclick="window.location.href='/tables/b_networks'">Found B networks</button>
+            <button class="w2ui-btn" onclick="window.location.href='/tables/b_networks'">B networks</button>
         </div>
         <div style="height: 4px;"></div>
         <div id="main" style="height: 800px; margin-left: 20px; margin-right: 20px;"></div>
@@ -34,7 +34,7 @@
                         toolbarReload   : false,
                         toolbarColumns  : true,
                         toolbarSearch   : true,
-                        toolbarAdd      : false,
+                        toolbarAdd      : true,
                         toolbarDelete   : true,
                         toolbarSave     : true
                     },
@@ -45,10 +45,10 @@
                     searches: [ {{ search_str|safe }} ],
                     columns: [ {{ columns_str|safe }} ],
                     onAdd: function (event) {
-                        w2popup.open({
-                            title: 'Popup Title',
-                            text: 'This is text inside the popup'
-                        })
+                        window.location.href = "/_add_new?{{ action_page }}";
+                    },
+                    onDelete: function (event) {
+                        console.log('delete has default behavior');
                     },
                     {{ records_str|safe }}
                 }

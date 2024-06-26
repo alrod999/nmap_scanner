@@ -1,0 +1,34 @@
+{%extends 'base_w2grid.html'%}
+    {%block html_body%}
+        <div id="addNew" style="width: 600px"></div>
+        <script>
+            $(function () {
+                $('#addNew').w2form({
+                    name   : 'AddNewForm',
+                    url      : '/_add_new',
+                    fields : [
+                        { name: 'Ipv4', type: 'text', required: true },
+                        { name: 'Name',  type: 'text', required: false },
+                        { name: 'Owner',   type: 'text', required: true},
+                        { name: 'Description',   type: 'text'}
+                    ],
+                    actions: {
+                        Reset() { this.clear(); },
+                        "save": function (target, data) {
+                            this.save();
+                            window.location.href = "/";
+                        },
+                        custom: {
+                            text: 'Cancel',
+                            style: 'color: red',
+                            class: 'custom-class',
+                            onClick(event) {
+                                console.log('Custom button clicked', event)
+                                window.location.href = "/";
+                            }
+                        }
+                    },
+                });
+            });
+        </script>
+    {%endblock html_body%}
