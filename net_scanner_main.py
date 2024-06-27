@@ -70,7 +70,7 @@ if __name__ == '__main__':
                                 alive_net_refresh_timer = time.time() + cfg.alive_net_refresh_period
                                 # To limit scanning - limit the scan to "selected" networks
                                 for network, in sql.cursor.execute('SELECT network FROM alive_networks').fetchall():
-                                    if (cfg.scan_mode != cfg.ScanMode.SELECTED or
+                                    if (cfg.SCAN_MODE != cfg.ScanMode.SELECTED or
                                             '.'.join(network.split('.')[0:1]) not in cfg.selected_b_networks):
                                         scan_networks(sql, full_net_pattern=network)
                                     else:

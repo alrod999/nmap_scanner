@@ -45,7 +45,7 @@
                     searches: [ {{ search_str|safe }} ],
                     columns: [ {{ columns_str|safe }} ],
                     onAdd: function (event) {
-                        window.location.href = "/_add_new?{{ action_page }}";
+                        window.location.href = "/_add_new?page={{ action_page }}";
                     },
                     onDelete: function (event) {
                         console.log('delete has default behavior');

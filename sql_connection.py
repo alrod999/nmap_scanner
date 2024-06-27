@@ -55,12 +55,12 @@ class SqlConnection:
             self.cursor.execute(f'INSERT INTO alive_networks (network, hosts) VALUES ("{network}", {count})')
         self.conn.commit()
 
-    def update_table(self, table, params_list, vals_list, filter, update_date=False):
+    def update_table(self, table, params_list, vals_list, sql_filter, update_date=False):
         sql_params = ', '.join([f'{par}="{val}"' for par, val in zip(params_list, vals_list)])
         if update_date:
             current_date = datetime.now().strftime("%Y-%b-%d %H:%M:%S")
             sql_params += f",updated='{current_date}'"
-        updated = self.cursor.execute(f'UPDATE {table} SET {sql_params} WHERE {filter}').rowcount
+        updated = self.cursor.execute(f'UPDATE {table} SET {sql_params} WHERE {sql_filter}').rowcount
         if not updated:
             vals = ",".join([f'"{val}"' for val in vals_list])
             self.cursor.execute(f'INSERT INTO {table} ({",".join(params_list)}) VALUES ({vals})')

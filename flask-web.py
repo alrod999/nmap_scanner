@@ -47,8 +47,8 @@ app = Flask(__name__)
 @app.route('/details')
 def details():
     ipv4 = request.args['ip']
-    sql = SqlConnection()
-    result = sql.cursor.execute(f'SELECT name,owner,type,os,version FROM hosts WHERE ipv4="{ipv4}"').fetchall()
+    # sql = SqlConnection()
+    # result = sql.cursor.execute(f'SELECT name,owner,type,os,version FROM hosts WHERE ipv4="{ipv4}"').fetchall()
     return render_template(
         'DetailsSummary.html',
         host_details=f'{ipv4}',
@@ -68,7 +68,7 @@ def table_action_bnetworks():
 
 
 def treat_action(table, request):
-    logger.debug(request)
+    logger.debug(f'{table=}, {request=}')
     request_dict = json.loads(request)
     sql = SqlConnection()
     action = request_dict['action']
@@ -90,10 +90,15 @@ def treat_action(table, request):
             )
     elif action == 'delete':
         for host in request_dict["recid"]:
-            logger.info(f'====remove "{host=}"')
-            sql.delete_host(host)
+            logger.debug(f'====remove "{host=}"')
+            if table == 'hosts':
+                sql.delete_host(host)
+            elif table == 'b_networks':
+                sql.delete_row('b_networks', f'network="{host}"')
     else:
-        logger.error(f'Wrong action {request_dict["action"]}')
+        msg: str = f'Wrong action {request_dict["action"]}'
+        logger.error(msg)
+        return jsonify({"status": "error", "message": msg}), 503
     return jsonify({"status": "success"}), 200
 
 
@@ -117,8 +122,10 @@ def get_b_networks():
 @app.route('/tables/<path:table_name>')
 def tables(table_name=None):
     valid_tables = ('b_networks', 'alive_networks')
-    if table_name is None or table_name == "" or table_name not in valid_tables:
-        return f'\nWrong table "{table_name}".\n Available tables: "b_networks", "alive_networks"'
+    if table_name not in valid_tables:
+        msg: str = f'Wrong table "{table_name}". Available tables: {valid_tables}'
+        logger.error(msg)
+        return jsonify({"status": "error", "message": msg}), 500
     sql = SqlConnection()
     headers = sql.get_table_header(table_name)
     columns = []
@@ -147,7 +154,7 @@ def tables(table_name=None):
         columns_str=columns_str,
         records_str=records_str,
         search_str=search_str,
-        action_page=table_name,
+        action_page='/' + table_name,
     )
 
 
@@ -157,19 +164,41 @@ def _add_new():
     # Assuming 'response' is the URL encoded string
     # decoded_response = unquote(response)
 
+    logger.debug(request.method + f', {request.args=}')
     if request.method == 'POST':
-        # logger.info(request.args)
         req_json = re.sub(r'request=', '', unquote_plus(request.get_data(as_text=True,)))
         data = json.loads(req_json.lower())['record']
-        data['status'] = 'down'
-        data['scanned'] = '0'
-        logger.debug(f'{data}, \n{[*data]}')
+        logger.debug(request.method + f', {data=}')
         sql = SqlConnection()
-        sql.update_hosts_table(data)
+        if 'ipv4' in data:
+            data['status'] = 'down'
+            data['scanned'] = '0'
+            sql.update_hosts_table(data)
+        elif 'network' in data:
+            sql.update_table('b_networks',
+                             [*data], [data[key] for key in data], f'network = "{data["network"]}"')
+        else:
+            logger.error(f'Unknown data type')
+            return jsonify({"status": "failed"}), 503
+        logger.debug(f'{data}, \n{[*data]}')
         return jsonify({"status": "success"}), 200
     else:
-        logger.info(request.method )
-        return render_template('add_new_record.html',)
+        match request.args['page']:
+            case 'hosts':
+                fields_str = """
+                    {name: 'Owner', type: 'text', required: true},
+                    {name: 'Ipv4', type: 'text', required: true},
+                    {name: 'Name', type: 'text', required: false},
+                    {name: 'Description', type: 'text'}
+                """
+                cancel_url = '/'
+            case 'b_networks':
+                fields_str = """
+                    {name: 'Network', type: 'text', required: true},
+                    {name: 'Hosts', type: 'text', required: false}
+                """
+                cancel_url = '/tables/b_networks'
+        return render_template('add_new_record.html', fields_str=fields_str, cancel_url=cancel_url)
 
 
 @app.route('/')
@@ -224,7 +253,7 @@ options: {{items: ['&#9989;', '&#9760;']}} }}")
         columns_str=columns_str,
         records_str=records_str,
         search_str=search_str,
-        action_page='hosts'
+        action_page='/hosts'
     )
 
 

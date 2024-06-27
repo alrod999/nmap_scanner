@@ -16,7 +16,7 @@ class ScanMode(Enum):
     SELECTED = 1
 
 
-scan_mode = ScanMode.SELECTED
+SCAN_MODE = ScanMode.SELECTED
 
 log_files_path = Path(__file__).parent / 'logs'
 log_files_path.mkdir(exist_ok=True)
@@ -138,10 +138,10 @@ def config_logger(file=log_file, debug='yes', separate_stderr='no', logger_name=
 
 
 def get_b_network_for_scan(b_range=256):
-    if scan_mode == ScanMode.SELECTED:
+    if SCAN_MODE == ScanMode.SELECTED:
         return selected_b_networks
-    elif scan_mode == ScanMode.FULL:
+    elif SCAN_MODE == ScanMode.FULL:
         return range(b_range)
     else:
-        raise Exception(f'Bad ScanMode {scan_mode}')
+        raise Exception(f'Bad ScanMode {SCAN_MODE}')
 
