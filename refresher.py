@@ -55,7 +55,7 @@ def search_for_dead(one_cycle: bool = False) -> None:
                         fh.write(f'{ipv4} ')
                         hosts_ip_set.add(ipv4)
                 log.info(f'Process [{i}:{i + 256}] hosts in the "hosts" table')
-                cmd_str = f'nmap.exe -sn -n -PE --max-rtt-timeout 200ms --disable-arp-ping \
+                cmd_str = f'nmap.exe -sn -n -PE -Pn --max-rtt-timeout 200ms --disable-arp-ping \
                 --host-timeout 30s -oX {os.path.normcase(xml_res_file)} -iL {os.path.normcase(temp_hosts_nmap)}'
 
                 log.debug(cmd_str)

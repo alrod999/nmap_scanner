@@ -1,6 +1,8 @@
 venv/
 logs/
 tmp/
+temp/
 .idea/
 __pycache__/
 *.db
+*.db-journal

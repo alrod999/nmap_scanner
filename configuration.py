@@ -37,8 +37,8 @@ selected_b_networks = (
     '172.17',
 )
 alive_net_refresh_period = 21600  # in seconds
-search_for_dead_period = 5
-search_for_dead_burst = 2
+search_for_dead_period = 4
+search_for_dead_burst = 5
 sleep_between_c_networks_scan = 10
 filter_os_for_AUDC_scan = "os<>'Windows' AND os<>'JUNOS' AND os<>'iLO' AND os<>'ESXi' AND \
 os<>'FreeBSD' AND os<>'OpenBSD' AND os<>'Data ONTAP' and os<>'IOS' AND os<>'AOS' AND os<>'FreeNAS' \
@@ -50,6 +50,10 @@ exclude_networks = ['10.44.0.0/16', '10.128.0.0/16', '10.255.0.0/16', '10.250.0.
                     '10.22.0.0/16',
                     ]
 exclude_networks_obj_list = [ipaddress.ip_network(net) for net in exclude_networks]
+exclude_file = tmp_folder_path / f'exclude_networks.txt'
+with open(exclude_file, 'w') as fh:
+    fh.write('\n'.join(exclude_networks))
+
 check_ports_dict = {'T:22': 'ssh', 'T:80': 'http', 'T:443': 'https', 'T:3389': 'rdp'}
 sql_fields = {
     'ipv4': 'char(17) primary key',
@@ -80,6 +84,7 @@ sql_fields = {
     'updated': 'date',
     'web_server': 'char(32)',
     'audc': 'int',
+    'scanned': 'int',
     }
 fields_defaults = {}
 for prot in check_ports_dict:

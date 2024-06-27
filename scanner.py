@@ -2,6 +2,8 @@ from pathlib import Path
 import subprocess
 import os
 import re
+import ipaddress
+import socket
 from datetime import datetime
 import logging
 import configuration as conf
@@ -18,26 +20,32 @@ def scan_networks(
         xml_res_file=conf.tmp_folder_path / 'nmap_res.xml',
         only_public=True,
         ):
+    pn_param: str = ''
+    hostname: str = ''
     if full_net_pattern:
         scan_pattern = full_net_pattern
     else:
         scan_pattern = f'{subnet_a}.{subnet_b}.{subnet_c}.0/24'
-
-    if only_public and not conf.ipaddress.ip_network(scan_pattern).is_private:
-        log.info(f'The network {scan_pattern} is public - cannot run scan on public networks')
-        return -1
-
-    for f_net in conf.exclude_networks_obj_list:
-        if conf.ipaddress.ip_network(scan_pattern).subnet_of(f_net):
-            log.info(f'The network {scan_pattern} is found as excluded from scan network')
+    try:
+        ipaddress.ip_network(scan_pattern)
+        if only_public and not ipaddress.ip_network(scan_pattern).is_private:
+            log.info(f'The network {scan_pattern} is public - cannot run scan on public networks')
             return -1
-    exclude_file = conf.tmp_folder_path / f'{Path(__file__).stem}.txt'
-    with open(exclude_file, 'w') as fh:
-        fh.write('\n'.join(conf.exclude_networks))
-
+        for f_net in conf.exclude_networks_obj_list:
+            if ipaddress.ip_network(scan_pattern).subnet_of(f_net):
+                log.info(f'The network {scan_pattern} is found as excluded from scan network')
+                return -1
+    except ValueError:
+        log.info(f'The {scan_pattern=} is not a valid network - is it host? - try to resolve FQDN')
+        try:
+            log.info(f'{scan_pattern} = {socket.gethostbyname(scan_pattern)}')
+            hostname = scan_pattern
+        except:
+            pass
+        pn_param = '-Pn'
     log.info(f'start scanning the {scan_pattern}')
     cmd_str = f'nmap.exe -p {",".join([*conf.check_ports_dict])} -O --max-rtt-timeout 100ms --disable-arp-ping \
---host-timeout 30s -sT -PE -oX {os.path.normcase(xml_res_file)} --excludefile {exclude_file} {scan_pattern}'
+--host-timeout 30s -sT -PE {pn_param} -oX {os.path.normcase(xml_res_file)} --excludefile {conf.exclude_file} {scan_pattern}'
 
     log.debug(cmd_str)
     cmd_res = subprocess.run(
@@ -52,13 +60,13 @@ def scan_networks(
         log.error(f'ERROR! Failed to enumerate {scan_pattern} subnet')
     else:
         log.info(f'The scanning "{scan_pattern}" subnet passed successfully')
-        found = process_nmap_res(sql, xml_res_file)
+        found = process_nmap_res(sql, xml_res_file, hostname=hostname)
         if found:
             sql.update_alive_networks_table(scan_pattern, found)
     return found
 
 
-def process_nmap_res(sql, xml_res_file):
+def process_nmap_res(sql, xml_res_file, hostname: str = ''):
     rt = conf.XmlParser(xml_res_file)
     count = 0
     current_date = datetime.now().strftime("%Y-%b-%d %H:%M:%S")
@@ -66,7 +74,7 @@ def process_nmap_res(sql, xml_res_file):
         count += 1
         host_obj = dict()
         for host_addr in host.findall('address'):
-            host_obj[host_addr.attrib['addrtype']] = host_addr.attrib['addr']
+            host_obj['ipv4'] = hostname if hostname else host_addr.attrib['addr']
             if host_addr.attrib['addrtype'] == 'mac' and host_addr.attrib.get('vendor', None):
                 host_obj['macvendor'] = host_addr.attrib['vendor']
         prots_el = host.find('ports')
@@ -92,6 +100,7 @@ def process_nmap_res(sql, xml_res_file):
         except:
             pass
         host_obj['status'] = 'up'
+        host_obj['scanned'] = '1'
         log.info(host_obj)
         sql.update_hosts_table(host_obj, current_date, False)
     sql.conn.commit()

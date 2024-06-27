@@ -162,6 +162,7 @@ def _add_new():
         req_json = re.sub(r'request=', '', unquote_plus(request.get_data(as_text=True,)))
         data = json.loads(req_json.lower())['record']
         data['status'] = 'down'
+        data['scanned'] = '0'
         logger.debug(f'{data}, \n{[*data]}')
         sql = SqlConnection()
         sql.update_hosts_table(data)
