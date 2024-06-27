@@ -184,7 +184,7 @@ def _add_new():
         return jsonify({"status": "success"}), 200
     else:
         match request.args['page']:
-            case 'hosts':
+            case '/hosts':
                 fields_str = """
                     {name: 'Owner', type: 'text', required: true},
                     {name: 'Ipv4', type: 'text', required: true},
@@ -192,12 +192,15 @@ def _add_new():
                     {name: 'Description', type: 'text'}
                 """
                 cancel_url = '/'
-            case 'b_networks':
+            case '/b_networks':
                 fields_str = """
                     {name: 'Network', type: 'text', required: true},
                     {name: 'Hosts', type: 'text', required: false}
                 """
                 cancel_url = '/tables/b_networks'
+            case _:
+                logger.error(f'Unknown page "{request.args["page"]}"')
+                return jsonify({"status": "failed"}), 500
         return render_template('add_new_record.html', fields_str=fields_str, cancel_url=cancel_url)
 
 

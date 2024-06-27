@@ -47,9 +47,6 @@
                     onAdd: function (event) {
                         window.location.href = "/_add_new?page={{ action_page }}";
                     },
-                    onDelete: function (event) {
-                        console.log('delete has default behavior');
-                    },
                     {{ records_str|safe }}
                 }
             }
