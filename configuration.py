@@ -55,7 +55,7 @@ with open(exclude_file, 'w') as fh:
     fh.write('\n'.join(exclude_networks))
 
 check_ports_dict = {'T:22': 'ssh', 'T:80': 'http', 'T:443': 'https', 'T:3389': 'rdp'}
-sql_fields = {
+sql_fields: dict[str, str] = {
     'ipv4': 'char(17) primary key',
     'name': 'char(32)',
     'os': 'char(32)',

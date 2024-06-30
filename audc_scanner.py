@@ -111,18 +111,18 @@ def run_audc_scanner(one_loop=False):
                         update_str = f"UPDATE hosts SET {','.join(sql_update_list)} WHERE ipv4='{res['ip']}'"
                         log.debug(update_str)
                         updated = sql.cursor.execute(update_str).rowcount
+                        sql.conn.commit()
                         if not updated:
                             log.error(f'{update_str} \n Failed to update SQL table')
                         if "type='AUDC'" in sql_update_list:
                             ip_c_net = ipaddress.ip_network(res['ip']+'/24', False).network_address.__str__()
                             audc_c_networks[ip_c_net] = audc_c_networks.get(ip_c_net, 0) + 1
 
-                sql.conn.commit()
             for audc_c_net, count in audc_c_networks.items():
                 update_str = f"UPDATE alive_networks SET audc={count} WHERE network='{audc_c_net}/24'"
                 if not sql.cursor.execute(update_str).rowcount:
                     log.error(f'{update_str} \n Failed to update SQL table')
-            sql.conn.commit()
+                sql.conn.commit()
 
             log.debug(f'The rest scan took {time.time() - start_scan_timestamp} sec, found {found_audc_hosts} audc')
         except Exception as ex:

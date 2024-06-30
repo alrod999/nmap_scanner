@@ -103,6 +103,6 @@ def process_nmap_res(sql, xml_res_file, hostname: str = ''):
         host_obj['scanned'] = '1'
         log.info(host_obj)
         sql.update_hosts_table(host_obj, current_date, False)
-    sql.conn.commit()
+        sql.conn.commit()
     log.info(f'Found {count} hosts in "{xml_res_file}"')
     return count

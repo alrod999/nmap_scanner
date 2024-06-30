@@ -5,6 +5,7 @@ from logging import Logger
 import subprocess
 from datetime import datetime
 import configuration as cnf
+from scanner import scan_networks
 from sql_connection import SqlConnection
 
 
@@ -49,6 +50,10 @@ def search_for_dead(one_cycle: bool = False) -> None:
             all_ips = len(sql_tuples)
             log.info(f'Found {all_ips} hosts')
             for i in range(0, all_ips, cnf.search_for_dead_burst):
+                # At first Try to scan manually newly added hosts
+                not_scanned = sql.cursor.execute('SELECT ipv4 FROM hosts WHERE scanned=0').fetchall()
+                for ipv4, in not_scanned:
+                    scan_networks(sql, full_net_pattern=ipv4)
                 current_date = datetime.now().strftime("%Y-%b-%d %H:%M:%S")
                 with open(temp_hosts_nmap, 'w') as fh:
                     for ipv4, in sql_tuples[i:i + cnf.search_for_dead_burst]:
@@ -108,8 +113,7 @@ def search_for_dead(one_cycle: bool = False) -> None:
                                      f'probably the IP {ipv4} changed (dhcp)')
                             log.info(f'Delete dead host {ipv4}')
                             sql.cursor.execute(del_command)
-
-            sql.conn.commit()
+                sql.conn.commit()
         except Exception as err:
             log.critical('An exception happened during refresh cycle!!!', exc_info=err)
         if one_cycle: break

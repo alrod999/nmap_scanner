@@ -9,7 +9,7 @@ log = logging.getLogger('sql')
 class SqlConnection:
 
     def __init__(self, db='net_scan_data.db'):
-        self.conn = sqlite3.connect(db)
+        self.conn = sqlite3.connect(db, timeout=10)
         self.cursor = self.conn.cursor()
         self.cursor.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='hosts'")
 
@@ -35,10 +35,14 @@ class SqlConnection:
     def update_hosts_table(self, host_obj, current_date=None, commit=True):
         if current_date is None:
             current_date = datetime.now().strftime("%Y-%b-%d %H:%M:%S")
-        sql_params = ', '.join([f"{key}='{remove_bad_symbols(host_obj[key])}'" for key in host_obj])
-        if not self.cursor.execute(
-                f"UPDATE hosts SET {sql_params},updated='{current_date}' WHERE ipv4='{host_obj['ipv4']}'"
-        ).rowcount:
+        sql_params_list = []
+        for key in host_obj:
+            delimiter = "'" if cfg.sql_fields[key] != 'int' else ""
+            sql_params_list.append(f"{key}={delimiter}{remove_bad_symbols(host_obj[key])}{delimiter}")
+        sql_params = ', '.join(sql_params_list)
+        cmd = f"UPDATE hosts SET {sql_params},updated='{current_date}' WHERE ipv4='{host_obj['ipv4']}'"
+        print(cmd)
+        if not self.cursor.execute(cmd).rowcount:
             for key in cfg.fields_defaults:
                 if not host_obj.get(key): host_obj[key] = cfg.fields_defaults[key]
             sql_params = ', '.join([f"'{host_obj[key]}'" for key in host_obj])

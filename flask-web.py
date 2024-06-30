@@ -53,7 +53,7 @@ def details():
         'DetailsSummary.html',
         host_details=f'{ipv4}',
         host_links=f'host links {ipv4}',
-        audc_summary='AUDC summary'
+        audc_summary='Summary'
     )
 
 
@@ -232,6 +232,8 @@ def index():
             elif isinstance(param, str):
                 param = param[0:32]
                 param = param.replace('\n', '')
+                line_list.append(f"{param_name}: '{param}'")
+            else:
                 line_list.append(f"{param_name}: '{param}'")
         line = ', '.join(line_list)
         line = line.replace("'x'", "'&#10060;'")
