@@ -1,4 +1,3 @@
-from pathlib import Path
 import subprocess
 import os
 import re
@@ -6,7 +5,7 @@ import ipaddress
 import socket
 from datetime import datetime
 import logging
-import configuration as conf
+from configuration import Config, XmlParser
 
 log = logging.getLogger(__name__)
 
@@ -17,11 +16,12 @@ def scan_networks(
         subnet_b=None,
         subnet_c=None,
         full_net_pattern=None,
-        xml_res_file=conf.tmp_folder_path / 'nmap_res.xml',
+        xml_res_file=Config.tmp_folder_path / 'nmap_res.xml',
         only_public=True,
-        ):
+        ) -> int:
     pn_param: str = ''
     hostname: str = ''
+    found: int = 0
     if full_net_pattern:
         scan_pattern = full_net_pattern
     else:
@@ -31,7 +31,7 @@ def scan_networks(
         if only_public and not ipaddress.ip_network(scan_pattern).is_private:
             log.info(f'The network {scan_pattern} is public - cannot run scan on public networks')
             return -1
-        for f_net in conf.exclude_networks_obj_list:
+        for f_net in Config.exclude_networks_obj_list:
             if ipaddress.ip_network(scan_pattern).subnet_of(f_net):
                 log.info(f'The network {scan_pattern} is found as excluded from scan network')
                 return -1
@@ -44,8 +44,8 @@ def scan_networks(
             pass
         pn_param = '-Pn'
     log.info(f'start scanning the {scan_pattern}')
-    cmd_str = f'nmap.exe -p {",".join([*conf.check_ports_dict])} -O --max-rtt-timeout 100ms --disable-arp-ping \
---host-timeout 30s -sT -PE {pn_param} -oX {os.path.normcase(xml_res_file)} --excludefile {conf.exclude_file} {scan_pattern}'
+    cmd_str = f'nmap.exe -p {",".join([*Config.check_ports_dict])} -O --max-rtt-timeout 100ms --disable-arp-ping \
+--host-timeout 30s -sT -PE {pn_param} -oX {os.path.normcase(xml_res_file)} --excludefile {Config.exclude_file} {scan_pattern}'
 
     log.debug(cmd_str)
     cmd_res = subprocess.run(
@@ -67,7 +67,7 @@ def scan_networks(
 
 
 def process_nmap_res(sql, xml_res_file, hostname: str = ''):
-    rt = conf.XmlParser(xml_res_file)
+    rt = XmlParser(xml_res_file)
     count = 0
     current_date = datetime.now().strftime("%Y-%b-%d %H:%M:%S")
     for host in rt.root.findall('host'):
@@ -84,7 +84,7 @@ def process_nmap_res(sql, xml_res_file, hostname: str = ''):
                 if port.attrib['protocol'] == 'tcp': prot_prefix = 'T:'
                 elif port.attrib['protocol'] == 'udp': prot_prefix = 'U:'
                 else: log.warning(f"Unlisted protocol found: '{port.attrib['protocol']}'")
-                check_prot_name = conf.check_ports_dict.get(prot_prefix + port.attrib['portid'], None)
+                check_prot_name = Config.check_ports_dict.get(prot_prefix + port.attrib['portid'], None)
                 if check_prot_name and port.find('state').attrib['state'] == 'open':
                     host_obj[check_prot_name] = 'ok'
         else:

@@ -1,7 +1,8 @@
 import time
+import ipaddress
 from datetime import datetime
 from multiprocessing import Process
-import configuration as cfg
+from configuration import Config, ScanMode
 from sql_connection import SqlConnection
 from refresher import search_for_dead
 from scanner import scan_networks
@@ -9,7 +10,7 @@ from audc_scanner import run_audc_scanner
 
 
 if __name__ == '__main__':
-    log = cfg.config_logger(cfg.log_file, logger_name='main')
+    log = Config.config_logger(Config.log_file, logger_name='main')
     print_original = print
 
     def print(msg, *args, **kwargs):
@@ -28,16 +29,16 @@ if __name__ == '__main__':
     #p.join()
 
     sql = SqlConnection()
-    alive_net_refresh_timer = time.time() + cfg.alive_net_refresh_period
+    alive_net_refresh_timer = time.time() + Config.alive_net_refresh_period
     while True:
         try:
-            if not cfg.ALLOW_SCAN:
+            if not Config.ALLOW_SCAN:
                 time.sleep(1)
                 continue
             b_net_hosts_num = {}
             found_all = 0
-            for subnet_a in cfg.networks_A_list:
-                for subnet_b in cfg.get_b_network_for_scan(256):
+            for subnet_a in Config.networks_A_list:
+                for subnet_b in Config.get_b_network_for_scan(256):
                     if isinstance(subnet_b, int):
                         subnet_ab_str = f'{subnet_a}.{subnet_b}'
                     else:
@@ -49,7 +50,7 @@ if __name__ == '__main__':
                     if b_hosts is not None and b_hosts[0] == 0:
                         log.info(f'the B subnet "{subnet_ab_str}." was detected as empty - will not be scanned')
                         continue
-                    if not cfg.ipaddress.ip_network(f'{subnet_ab_str}.0.0/16').is_private:
+                    if not ipaddress.ip_network(f'{subnet_ab_str}.0.0/16').is_private:
                         log.info(f'The network {subnet_ab_str}.0.0/16 is not private - cannot run scan on public networks')
                         continue
                     b_net_hosts_num[subnet_ab_str] = 0
@@ -60,18 +61,18 @@ if __name__ == '__main__':
                             if found_hosts >= 0:
                                 b_net_hosts_num[subnet_ab_str] += found_hosts
                             # sleep some time
-                            log.info(f'sleep {cfg.sleep_between_c_networks_scan} seconds after c network scan')
-                            time.sleep(cfg.sleep_between_c_networks_scan)
+                            log.info(f'sleep {Config.sleep_between_c_networks_scan} seconds after c network scan')
+                            time.sleep(Config.sleep_between_c_networks_scan)
 
                             # It is most probable to find new host in alive networks
                             # So the "alive" subnets "C" are scanned more frequently
                             if alive_net_refresh_timer < time.time():
                                 log.info("Start scanning the 'alive_networks'")
-                                alive_net_refresh_timer = time.time() + cfg.alive_net_refresh_period
+                                alive_net_refresh_timer = time.time() + Config.alive_net_refresh_period
                                 # To limit scanning - limit the scan to "selected" networks
                                 for network, in sql.cursor.execute('SELECT network FROM alive_networks').fetchall():
-                                    if (cfg.SCAN_MODE != cfg.ScanMode.SELECTED or
-                                            '.'.join(network.split('.')[0:1]) not in cfg.selected_b_networks):
+                                    if (Config.SCAN_MODE != ScanMode.SELECTED or
+                                            '.'.join(network.split('.')[0:1]) not in Config.selected_b_networks):
                                         scan_networks(sql, full_net_pattern=network)
                                     else:
                                         log.debug(f'The "{network}" is not part of selected_b_networks - will not be scanned')

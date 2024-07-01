@@ -5,7 +5,7 @@ import os
 import ipaddress
 from datetime import datetime
 from sql_connection import SqlConnection
-from configuration import config_logger, filter_os_for_AUDC_scan, log_files_path
+from configuration import Config
 from sql_connection import remove_bad_symbols
 
 INTER_SCAN_DELAY = 1200
@@ -48,8 +48,8 @@ async def set_concurrent_clients(hosts):
 
 def run_audc_scanner(one_loop=False):
 
-    log_file = os.path.join(log_files_path, 'NetScanner_audc_scanner.log')
-    log = config_logger(log_file, logger_name='audc_sc')
+    log_file = os.path.join(Config.log_files_path, 'NetScanner_audc_scanner.log')
+    log = Config.config_logger(log_file, logger_name='audc_sc')
 
     def print(msg, *args, **kwargs):
         log.info(msg)
@@ -60,10 +60,10 @@ def run_audc_scanner(one_loop=False):
             # Get all alive hosts with http
             audc_hosts = sql.cursor.execute(
                 f"SELECT ipv4,username,password FROM hosts WHERE " +
-                f"(status='up' AND http='ok' and {filter_os_for_AUDC_scan})" +
+                f"(status='up' AND http='ok' and {Config.filter_os_for_AUDC_scan})" +
                 f" and (type='' or type='AUDC')"
             ).fetchall()
-            #audc_hosts = (('10.8.41.182', 'Admin', 'Admin'), ('10.8.94.152', '', ''),)
+            # audc_hosts = (('10.8.41.182', 'Admin', 'Admin'), ('10.8.94.152', '', ''),)
             hosts_to_scan = len(audc_hosts)
             found_audc_hosts = 0
             start_scan_timestamp = time.time()
@@ -80,14 +80,14 @@ def run_audc_scanner(one_loop=False):
                     sql_update_list = []
                     server = res["headers"].get("Server", "UNKNOWN")
                     if res["status"] == 404:
-                        if (server.find('Allegro-Software-RomPager/3.10') == 0 or server.find('AudioCodes') != -1):
+                        if server.find('Allegro-Software-RomPager/3.10') == 0 or server.find('AudioCodes') != -1:
                             log.info(f'{res["ip"]} - probably old AUDC device, the server "{server}"')
                             sql_update_list.append("type='AUDC'")
                         elif server.find('lighttpd/1.4.') == 0:
                             log.info(f'{res["ip"]} - probably AUDC phone, the server "{server}"')
                             sql_update_list.append("type='AC_PHONE'")
                         else:
-                            log.info(f'{res["ip"]} - the REST path is not found server "{server}": NOT AUDC device' )
+                            log.info(f'{res["ip"]} - the REST path is not found server "{server}": NOT AUDC device')
                             sql_update_list.append("type='NOT_AC'")
                     if res["status"] in (401, 404, 200):
                         sql_update_list.append(f"web_server='{server}'")
@@ -126,11 +126,10 @@ def run_audc_scanner(one_loop=False):
 
             log.debug(f'The rest scan took {time.time() - start_scan_timestamp} sec, found {found_audc_hosts} audc')
         except Exception as ex:
-            log.exception("ERROR! Exception in while loop",exc_info=True)
+            log.exception("ERROR! Exception in while loop", exc_info=True)
         finally:
             if one_loop: break
             time.sleep(INTER_SCAN_DELAY)
-
 
 
 if __name__ == '__main__':

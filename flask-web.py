@@ -3,12 +3,12 @@ import logging
 import re
 from urllib.parse import unquote_plus
 import os
-from flask import (Flask, render_template, request, jsonify, redirect, url_for)
+from flask import (Flask, render_template, request, jsonify)
 from sql_connection import SqlConnection
-from configuration import config_logger, log_files_path
+from configuration import Config
 
-log_file = os.path.join(log_files_path, 'web_app.log')
-config_logger(log_file, logger_name='web_app')
+log_file = os.path.join(Config.log_files_path, 'web_app.log')
+Config.config_logger(log_file, logger_name='web_app')
 
 
 # Create a logger
@@ -40,7 +40,7 @@ params_attr = {
     'description': "size: '120px', attr: 'align=left', editable: {type: 'text'},",
     }
 
-defaut_attr = "size: '80px',"
+default_attr = "size: '80px',"
 app = Flask(__name__)
 
 
@@ -75,10 +75,10 @@ def treat_action(table, request):
     if action == 'save':
         for host in request_dict['changes']:
             if table == 'hosts':
-                filter = f"ipv4 = '{host['recid']}'"
+                ip_filter = f"ipv4 = '{host['recid']}'"
                 ipv4 = host['recid']
             elif table == 'b_networks':
-                filter = f"network = '{host['recid']}'"
+                ip_filter = f"network = '{host['recid']}'"
             else:
                 raise Exception(f'Wrong table {table}')
             del host['recid']
@@ -86,7 +86,7 @@ def treat_action(table, request):
                 table,
                 [*host],
                 [host[key] for key in host],
-                filter,
+                ip_filter,
             )
     elif action == 'delete':
         for host in request_dict["recid"]:
@@ -130,7 +130,7 @@ def tables(table_name=None):
     headers = sql.get_table_header(table_name)
     columns = []
     for header in headers:
-        temp_str = f"field: '{header}', text: '{header.title()}', {params_attr.get(header, defaut_attr)} sortable: true"
+        temp_str = f"field: '{header}', text: '{header.title()}', {params_attr.get(header, default_attr)} sortable: true"
         if header == 'hosts':
             temp_str += ", editable: {type: 'text'}"
         columns.append(f"{{ {temp_str} }}")
@@ -216,7 +216,7 @@ def index():
         hidden = 'true'
         if header in show_list: hidden = 'false'
         columns.append(f"{{ field: '{header}', text: '{header.title()}'," +
-                       f" hidden: {hidden},{params_attr.get(header, defaut_attr)} sortable: true }}")
+                       f" hidden: {hidden},{params_attr.get(header, default_attr)} sortable: true }}")
     columns_str = ',\n'.join(columns)
 
     records = []
