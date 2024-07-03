@@ -4,9 +4,8 @@ import time
 import os
 import ipaddress
 from datetime import datetime
-from sql_connection import SqlConnection
+from sql_connection import SqlConnection, remove_bad_symbols
 from configuration import Config
-from sql_connection import remove_bad_symbols
 
 INTER_SCAN_DELAY = 1200
 
@@ -50,9 +49,6 @@ def run_audc_scanner(one_loop=False):
 
     log_file = os.path.join(Config.log_files_path, 'NetScanner_audc_scanner.log')
     log = Config.config_logger(log_file, logger_name='audc_sc')
-
-    def print(msg, *args, **kwargs):
-        log.info(msg)
 
     sql = SqlConnection()
     while True:
@@ -105,7 +101,7 @@ def run_audc_scanner(one_loop=False):
                         sql_update_list.append("type='AUDC'")
 
                     if not sql_update_list:
-                        print(f'{res["result"]} while gets status of {res["ip"]}, Error: "{res["value"]}" ')
+                        log.info(f'{res["result"]} while gets status of {res["ip"]}, Error: "{res["value"]}" ')
                     else:
                         sql_update_list.append(f"updated='{current_date}'")
                         update_str = f"UPDATE hosts SET {','.join(sql_update_list)} WHERE ipv4='{res['ip']}'"

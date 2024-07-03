@@ -8,15 +8,7 @@ from sql_connection import SqlConnection
 from configuration import Config
 
 log_file = os.path.join(Config.log_files_path, 'web_app.log')
-Config.config_logger(log_file, logger_name='web_app')
-
-
-# Create a logger
-logger = logging.getLogger('Flask_logger')
-logger.setLevel(logging.DEBUG)  # Set the log level
-file_handler = logging.FileHandler(log_file)
-file_handler.setLevel(logging.DEBUG)  # Set the log level
-logger.addHandler(file_handler)
+logger = Config.config_logger(log_file, logger_name='web_app')
 
 show_list = ['ipv4', 'name', 'os', 'owner', 'status', 'type', 'productType', 'version',
              'updated',  'ssh', 'http', 'rdp', 'https', 'description']

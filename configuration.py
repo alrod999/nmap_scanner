@@ -1,3 +1,8 @@
+"""
+default global configuration for the application,
+the configuration is overrided by appsettings.json file settings
+"""
+
 from pathlib import Path
 import ipaddress
 import logging
@@ -5,7 +10,6 @@ from logging.handlers import RotatingFileHandler
 import sys
 import os
 from enum import Enum
-import traceback
 import xml.etree.ElementTree as eT
 
 
@@ -136,8 +140,18 @@ class Config:
         else:
             raise Exception(f'Bad ScanMode {cls.SCAN_MODE}')
 
+
 class XmlParser:
     def __init__(self, xml_res_file):
         tree = eT.parse(xml_res_file)
         self.root = tree.getroot()
 
+
+if (Path(__file__).parent / 'appsettings.json').exists():
+    import json
+    with open(Path(__file__).parent / 'appsettings.json') as fh:
+        app_settings = json.load(fh)
+    for key in app_settings:
+        if key not in dir(Config):
+            raise Exception(f'Bad key in appsettings.json: {key}')
+        setattr(Config, key, app_settings[key])
