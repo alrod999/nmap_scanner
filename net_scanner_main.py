@@ -1,14 +1,16 @@
+import os
+import subprocess
 import time
 import ipaddress
 from datetime import datetime
 from multiprocessing import Process
-from configuration import Config, ScanMode
+from configuration import Config
 from sql_connection import SqlConnection
 from refresher import search_for_dead
 from scanner import scan_networks
 from audc_scanner import run_audc_scanner
 
-log = Config.config_logger(Config.log_file, logger_name='main')
+log = Config.config_logger('main', file=Config.log_file)
 
 
 def test_for_new_networks(sql_handler: SqlConnection) -> list[tuple]:
@@ -24,9 +26,31 @@ def get_networks_for_scan(sql_handler: SqlConnection) -> list[str]:
     return [el[0] for el in sql_handler.cursor.execute('SELECT network FROM b_networks').fetchall()]
 
 
-if __name__ == '__main__':
+def check_process_is_running(sql_handler: SqlConnection, name: str, update: bool = True) -> bool:
+    running_app = sql_handler.get_all_rows_in_table('applications', select='pid', sql_filter=f'application="{name}"')
+    if not running_app:
+        return False
+    pid, *_ = running_app[0]
+    res = subprocess.run(
+        [f'tasklist.exe', '/FI', f'PID eq {pid}', '/FI', 'IMAGENAME eq python.exe', '/NH'],
+        capture_output=True, text=True
+    )
+    log.debug(res.stdout + res.stderr)
+    if str(pid) in res.stdout:
+        log.info(f'The {name} process with {pid=} is already running')
+        return True
+    log.info(f'The {name} process with {pid=} is not running')
+    if update:
+        my_pid: int = os.getpid()
+        sql_handler.update_table('applications', ('pid',), (my_pid,), f'application="{name}"', update_date=True)
+    return False
 
+
+if __name__ == '__main__':
     # Spawn the hosts refresher (a scanner
+    sql = SqlConnection()
+    if check_process_is_running(sql, Config.scanner_app_name):
+        exit(1)
     p_refresher = Process(target=search_for_dead,)
     p_refresher.daemon = True
     p_refresher.start()
@@ -34,7 +58,6 @@ if __name__ == '__main__':
     p_audc_scanner = Process(target=run_audc_scanner,)
     p_audc_scanner.daemon = True
     p_audc_scanner.start()
-    sql = SqlConnection()
     sql.update_table('b_networks', ('status',), ('idle',), update_date=False, )
     while True:
         try:

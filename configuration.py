@@ -15,6 +15,7 @@ import xml.etree.ElementTree as eT
 
 class Config:
     ALLOW_SCAN = True
+    scanner_app_name = 'netscan_app'
     log_files_path: Path = Path(__file__).parent / 'logs'
     log_files_path.mkdir(exist_ok=True)
     tmp_folder_path = Path(__file__).parent / 'tmp'
@@ -79,36 +80,36 @@ class Config:
             fields_defaults[key] = ''
     hosts_names_str = ','.join([*sql_fields])
 
-    @classmethod
-    def config_logger(cls, file: str | Path = '', debug='yes', separate_stderr='no', logger_name=''):
-        if not file:
-            file = cls.log_file
-        print(f'Initializing Logger, log file "{file}", logger name "{logger_name}"')
-
-        # configure file log handler
-        cls.log_file_handler = RotatingFileHandler(file, maxBytes=100_000_000, backupCount=5)
-        cls.log_file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-7s: %(name)-12s: %(message)s'))
-        cls.log_file_handler.setLevel(logging.DEBUG)
-        handlers_list = [cls.log_file_handler, ]
-
-        # configure console logger
-        formatter = logging.Formatter('%(levelname)-7s: %(name)-12s: %(message)s')
+    @staticmethod
+    def config_logger(logger_name: str, file: str | Path = '', debug='yes', add_root_file: bool = False) -> logging.Logger:
+        format_str: str = '%(levelname)-7s: %(name)-12s: %(message)s'
         low_level = logging.DEBUG if debug == 'yes' else logging.INFO
-
-        streams_list = [[sys.stdout, low_level], ]
-        if separate_stderr != 'no':
-            streams_list = [[sys.stdout, low_level], [sys.stderr, logging.WARNING]]
-        for stream, level in streams_list:
-            stream_h = logging.StreamHandler(stream)
-            handlers_list.append(stream_h)
-            stream_h.setLevel(level)
-            stream_h.setFormatter(formatter)
-            if level <= logging.INFO and separate_stderr != 'no':
-                stream_h.addFilter(lambda msg: msg.levelno <= logging.INFO)
-
-        logging.basicConfig(handlers=handlers_list, level=low_level, )
-        log = logging.getLogger(logger_name)
-        log.info('-- Start logger --')
+        logging.basicConfig(level=low_level, format=format_str)
+        log: logging.Logger = logging.getLogger(logger_name)
+        if len(log.handlers):
+            log.debug(f'the logger {logger_name} already exists and has handlers - skip adding new one')
+            return log
+        if file:
+            # configure file log handler
+            formatter: logging.Formatter = logging.Formatter('%(asctime)s ' + format_str)
+            log_file_handler = RotatingFileHandler(file, maxBytes=100_000_000, backupCount=5)
+            log_file_handler.setFormatter(formatter)
+            log_file_handler.setLevel(logging.DEBUG)
+            if add_root_file:
+                root_logger: logging.Logger = logging.getLogger()
+                for handler in root_logger.handlers:
+                    if isinstance(handler, logging.FileHandler):
+                        root_logger.info(f'Root logger already has a file handler: {handler.baseFilename} - '
+                                         f'skip adding new one')
+                        break
+                else:
+                    root_logger.addHandler(log_file_handler)
+            else:
+                if log.handlers:
+                    log.debug(f'the logger {logger_name} already exists and has handlers - new handler will not be added')
+                else:
+                    log.addHandler(log_file_handler)
+        log.info(f'-- Start {logger_name=} ({file=})--')
         return log
 
 

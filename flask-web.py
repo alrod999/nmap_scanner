@@ -1,14 +1,14 @@
 import ipaddress
 import json
 import re
+from pathlib import Path
 from urllib.parse import unquote_plus
-import os
 from flask import (Flask, render_template, request, jsonify)
 from sql_connection import SqlConnection
 from configuration import Config
 
-log_file = os.path.join(Config.log_files_path, 'web_app.log')
-logger = Config.config_logger(log_file, logger_name='web_app')
+log_file = Path(Config.log_files_path) / f'{Path(__file__).stem}.log'
+logger = Config.config_logger('web_app', file=log_file, add_root_file=True)
 
 show_list = ['ipv4', 'name', 'os', 'owner', 'status', 'type', 'productType', 'version',
              'updated',  'ssh', 'http', 'rdp', 'https', 'description']
@@ -118,7 +118,7 @@ def get_b_networks():
 
 @app.route('/tables/<path:table_name>')
 def tables(table_name=None):
-    valid_tables = ('b_networks', 'alive_networks')
+    valid_tables = ('b_networks', 'alive_networks', 'applications')
     if table_name not in valid_tables:
         msg: str = f'Wrong table "{table_name}". Available tables: {valid_tables}'
         logger.error(msg)
@@ -272,4 +272,4 @@ options: {{items: ['&#9989;', '&#9760;']}} }}")
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')

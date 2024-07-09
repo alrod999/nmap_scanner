@@ -30,15 +30,10 @@ def update_host_status(xml_res_file: Path | str, log: Logger) -> set[str]:
 
 
 def search_for_dead(one_cycle: bool = False) -> None:
-    log_file = os.path.join(Config.log_files_path, 'NetScanner_refresher.log')
+    log_file = os.path.join(Config.log_files_path, f'{__name__}.log')
+    log = Config.config_logger('refresher', file=log_file)
     xml_res_file = Config.tmp_folder_path / 'nmap_search_for_dead.xml'
     temp_hosts_nmap = Config.tmp_folder_path / 'temp_hosts_nmap.txt'
-
-    # log = config_logger(log_file)
-    log = Config.config_logger(file=log_file, logger_name='refresher')
-
-    def print(msg, *args, **kwargs):
-        log.info(msg)
 
     sql = SqlConnection()
     search_for_dead_timer = time.time()

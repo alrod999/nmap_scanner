@@ -1,7 +1,8 @@
+from pathlib import Path
+
 import aiohttp
 import asyncio
 import time
-import os
 import ipaddress
 from datetime import datetime
 from sql_connection import SqlConnection, remove_bad_symbols
@@ -46,10 +47,8 @@ async def set_concurrent_clients(hosts):
 
 
 def run_audc_scanner(one_loop=False):
-
-    log_file = os.path.join(Config.log_files_path, 'NetScanner_audc_scanner.log')
-    log = Config.config_logger(log_file, logger_name='audc_sc')
-
+    log_file = Path(Config.log_files_path) / f'{__name__}.log'
+    log = Config.config_logger('audc_sc', file=log_file, )
     sql = SqlConnection()
     while True:
         try:

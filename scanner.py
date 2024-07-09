@@ -4,10 +4,9 @@ import re
 import ipaddress
 import socket
 from datetime import datetime
-import logging
 from configuration import Config, XmlParser
 
-log = logging.getLogger(__name__)
+log = Config.config_logger('scanner', file=Config.log_file)
 
 
 def scan_networks(
