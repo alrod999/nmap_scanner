@@ -1,5 +1,5 @@
+import ipaddress
 import json
-import logging
 import re
 from urllib.parse import unquote_plus
 import os
@@ -12,7 +12,6 @@ logger = Config.config_logger(log_file, logger_name='web_app')
 
 show_list = ['ipv4', 'name', 'os', 'owner', 'status', 'type', 'productType', 'version',
              'updated',  'ssh', 'http', 'rdp', 'https', 'description']
-
 search_params = ['ipv4', 'name', 'os', 'owner', 'status', 'type', 'version', 'HA', 'productType', 'updated', ]
 
 params_attr = {
@@ -67,22 +66,28 @@ def treat_action(table, request):
     if action == 'save':
         for host in request_dict['changes']:
             if table == 'hosts':
-                ip_filter = f"ipv4 = '{host['recid']}'"
-                ipv4 = host['recid']
+                sql_filter = f"ipv4 = '{host['recid']}'"
             elif table == 'b_networks':
-                ip_filter = f"network = '{host['recid']}'"
+                try:
+                    net: ipaddress.IPv4Network = ipaddress.IPv4Network(host['recid'])
+                except ValueError as ex:
+                    logger.error(ex)
+                    return str(ex), 500
+                sql_filter = f"network = '{host['recid']}'"
             else:
-                raise Exception(f'Wrong table {table}')
+                msg: str = f'Wrong table {table}'
+                logger.error(msg)
+                return msg, 500
             del host['recid']
             sql.update_table(
                 table,
                 [*host],
                 [host[key] for key in host],
-                ip_filter,
+                sql_filter,
             )
     elif action == 'delete':
         for host in request_dict["recid"]:
-            logger.debug(f'====remove "{host=}"')
+            logger.debug(f'{action=}, "{host=}"')
             if table == 'hosts':
                 sql.delete_host(host)
             elif table == 'b_networks':
@@ -90,7 +95,7 @@ def treat_action(table, request):
     else:
         msg: str = f'Wrong action {request_dict["action"]}'
         logger.error(msg)
-        return jsonify({"status": "error", "message": msg}), 503
+        return msg, 503
     return jsonify({"status": "success"}), 200
 
 
@@ -117,7 +122,7 @@ def tables(table_name=None):
     if table_name not in valid_tables:
         msg: str = f'Wrong table "{table_name}". Available tables: {valid_tables}'
         logger.error(msg)
-        return jsonify({"status": "error", "message": msg}), 500
+        return msg, 500
     sql = SqlConnection()
     headers = sql.get_table_header(table_name)
     columns = []
@@ -152,10 +157,8 @@ def tables(table_name=None):
 
 @app.route('/_add_new', methods=['GET', 'POST'])
 def _add_new():
-
     # Assuming 'response' is the URL encoded string
     # decoded_response = unquote(response)
-
     logger.debug(request.method + f', {request.args=}')
     if request.method == 'POST':
         req_json = re.sub(r'request=', '', unquote_plus(request.get_data(as_text=True,)))
@@ -167,11 +170,24 @@ def _add_new():
             data['scanned'] = '0'
             sql.update_hosts_table(data)
         elif 'network' in data:
-            sql.update_table('b_networks',
-                             [*data], [data[key] for key in data], f'network = "{data["network"]}"')
+            try:
+                net: ipaddress.IPv4Network = ipaddress.IPv4Network(data["network"])
+            except ValueError as ex:
+                msg: str = f'Wrong IP network format "{data["network"]}": {ex}'
+                logger.error(msg)
+                return jsonify({"status": "error",  "message": msg}), 200
+            if net.prefixlen < 16:
+                msg: str = f'Network prefix should be 16 or more'
+                logger.error(msg)
+                return jsonify({"status": "error",  "message": msg}), 200
+            sql.update_table(
+                'b_networks',
+                [*data], [data[key] for key in data], f'network = "{net}"'
+            )
         else:
-            logger.error(f'Unknown data type')
-            return jsonify({"status": "failed"}), 503
+            msg: str = f'Unknown data type'
+            logger.error(msg)
+            return jsonify({"status": "error",  "message": msg}), 200
         logger.debug(f'{data}, \n{[*data]}')
         return jsonify({"status": "success"}), 200
     else:
@@ -187,12 +203,13 @@ def _add_new():
             case '/b_networks':
                 fields_str = """
                     {name: 'Network', type: 'text', required: true},
-                    {name: 'Hosts', type: 'text', required: false}
+                    {name: 'Owner', type: 'text', required: true}
                 """
                 cancel_url = '/tables/b_networks'
             case _:
-                logger.error(f'Unknown page "{request.args["page"]}"')
-                return jsonify({"status": "failed"}), 500
+                msg: str = f'Unknown page "{request.args["page"]}"'
+                logger.error(msg)
+                return msg, 500
         return render_template('add_new_record.html', fields_str=fields_str, cancel_url=cancel_url)
 
 

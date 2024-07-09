@@ -94,6 +94,7 @@ def search_for_dead(one_cycle: bool = False) -> None:
                     update_str += f", down_at='{current_date}'"
                 sql.cursor.execute(sql_cmd)
                 sql.conn.commit()
+                time.sleep(0.1)
                 if status == 'down':
                     #
                     # TODO -  check how long the host is in down state and delete
@@ -105,6 +106,7 @@ def search_for_dead(one_cycle: bool = False) -> None:
                     if not [x for x in (keep, type, owner, sub_owner) if x]:
                         log.info(f'Delete dead host ({ipv4})- there is no owner or other identification')
                         sql.cursor.execute(del_command)
+                        sql.conn.commit()
                     elif name:
                         h_list = sql.cursor.execute(
                             f"SELECT ipv4 FROM hosts WHERE name='{name}' AND domain='{domain}' AND type<>'AUDC'"
@@ -115,6 +117,7 @@ def search_for_dead(one_cycle: bool = False) -> None:
                                      f'probably the IP {ipv4} changed (dhcp)')
                             log.info(f'Delete dead host {ipv4}')
                             sql.cursor.execute(del_command)
+                            sql.conn.commit()
                 sql.conn.commit()
         except Exception as err:
             log.critical('An exception happened during refresh cycle!!!', exc_info=err)

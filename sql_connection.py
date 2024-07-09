@@ -29,7 +29,7 @@ class SqlConnection:
         if not self.cursor.execute('PRAGMA table_info(b_networks)').fetchall():
             log.info('Create "b_networks" table')
             self.cursor.execute(f'''
-                CREATE TABLE b_networks (network char(20) primary key, hosts integer, updated date
+                CREATE TABLE b_networks (network char(20) primary key, hosts integer, updated date, owner char(100), status char(20)
             ''')
 
     def update_hosts_table(self, host_obj, current_date=None, commit=True):
@@ -59,12 +59,14 @@ class SqlConnection:
             self.cursor.execute(f'INSERT INTO alive_networks (network, hosts) VALUES ("{network}", {count})')
         self.conn.commit()
 
-    def update_table(self, table, params_list, vals_list, sql_filter, update_date=False):
+    def update_table(self, table, params_list, vals_list, sql_filter: str = '', update_date=False):
         sql_params = ', '.join([f'{par}="{val}"' for par, val in zip(params_list, vals_list)])
         if update_date:
             current_date = datetime.now().strftime("%Y-%b-%d %H:%M:%S")
             sql_params += f",updated='{current_date}'"
-        updated = self.cursor.execute(f'UPDATE {table} SET {sql_params} WHERE {sql_filter}').rowcount
+        if sql_filter:
+            sql_filter = f'WHERE {sql_filter}'
+        updated = self.cursor.execute(f'UPDATE {table} SET {sql_params} {sql_filter}').rowcount
         if not updated:
             vals = ",".join([f'"{val}"' for val in vals_list])
             self.cursor.execute(f'INSERT INTO {table} ({",".join(params_list)}) VALUES ({vals})')

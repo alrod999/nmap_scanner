@@ -8,8 +8,15 @@
                     url      : '/_add_new',
                     fields : [ {{ fields_str|safe }} ],
                     onSave: function(event) {
-                        console.log(event);
-                        window.location.href = "{{ cancel_url }}";
+                        console.log(event.data.status);
+                        if (event.data.status == 'success') {
+                            var del_for = 1
+                        } else {
+                            var del_for = 1000
+                        }
+                        setTimeout(function() {
+                            window.location.href = "{{ cancel_url }}";
+                        }, (4 * del_for));
                     },
                     actions: {
                         Reset() { this.clear(); },

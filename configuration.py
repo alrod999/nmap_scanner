@@ -1,6 +1,6 @@
 """
 default global configuration for the application,
-the configuration is overrided by appsettings.json file settings
+the configuration is overridden by appsettings.json file settings
 """
 
 from pathlib import Path
@@ -13,31 +13,13 @@ from enum import Enum
 import xml.etree.ElementTree as eT
 
 
-class ScanMode(Enum):
-    FULL = 0
-    SELECTED = 1
-
-
 class Config:
     ALLOW_SCAN = True
-    SCAN_MODE = ScanMode.SELECTED
     log_files_path: Path = Path(__file__).parent / 'logs'
     log_files_path.mkdir(exist_ok=True)
     tmp_folder_path = Path(__file__).parent / 'tmp'
     tmp_folder_path.mkdir(exist_ok=True)
     log_file = os.path.join(log_files_path, 'netscan_main_log.txt')
-    selected_b_networks = (
-        '10.8',
-        '10.17',
-        '10.15',
-        '10.3',
-        '10.4',
-        '10.7',
-        '10.31',
-        '10.33',
-        '172.17',
-    )
-    alive_net_refresh_period = 21600  # in seconds
     search_for_dead_period = 4
     search_for_dead_burst = 5
     sleep_between_c_networks_scan = 10
@@ -45,11 +27,12 @@ class Config:
     os<>'FreeBSD' AND os<>'OpenBSD' AND os<>'Data ONTAP' and os<>'IOS' AND os<>'AOS' AND os<>'FreeNAS' \
     AND os<>'Android' AND os<>'DESQview/X' AND os<>'Solaris' AND os<>'CyanogenMod'"
 
-    networks_A_list = ['10', '172']
-    exclude_networks = ['10.44.0.0/16', '10.128.0.0/16', '10.255.0.0/16', '10.250.0.0/16',
-                        '10.91.0.0/16', '10.191.0.0/16', '10.66.0.0/16', '10.59.0.0/16',
-                        '10.22.0.0/16',
-                        ]
+    selected_networks = ('10.8.0.0/16', '10.3.0.0/16')
+    exclude_networks = (
+        '10.44.0.0/16', '10.128.0.0/16', '10.255.0.0/16', '10.250.0.0/16',
+        '10.91.0.0/16', '10.191.0.0/16', '10.66.0.0/16', '10.59.0.0/16',
+        '10.22.0.0/16',
+    )
     exclude_networks_obj_list = [ipaddress.ip_network(net) for net in exclude_networks]
     exclude_file = tmp_folder_path / f'exclude_networks.txt'
     with open(exclude_file, 'w') as fh:
@@ -110,10 +93,7 @@ class Config:
 
         # configure console logger
         formatter = logging.Formatter('%(levelname)-7s: %(name)-12s: %(message)s')
-        if debug == 'yes':
-            low_level = logging.DEBUG
-        else:
-            low_level = logging.INFO
+        low_level = logging.DEBUG if debug == 'yes' else logging.INFO
 
         streams_list = [[sys.stdout, low_level], ]
         if separate_stderr != 'no':
@@ -130,15 +110,6 @@ class Config:
         log = logging.getLogger(logger_name)
         log.info('-- Start logger --')
         return log
-
-    @classmethod
-    def get_b_network_for_scan(cls, b_range=256):
-        if cls.SCAN_MODE == ScanMode.SELECTED:
-            return cls.selected_b_networks
-        elif cls.SCAN_MODE == ScanMode.FULL:
-            return range(b_range)
-        else:
-            raise Exception(f'Bad ScanMode {cls.SCAN_MODE}')
 
 
 class XmlParser:
