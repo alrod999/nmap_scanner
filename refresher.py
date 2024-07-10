@@ -1,3 +1,4 @@
+import re
 import time
 import os
 from pathlib import Path
@@ -57,9 +58,8 @@ def search_for_dead(one_cycle: bool = False) -> None:
                         fh.write(f'{ipv4} ')
                         hosts_ip_set.add(ipv4)
                 log.info(f'Process [{i}:{i + 256}] hosts in the "hosts" table')
-                cmd_str = f'nmap.exe -sn -n -PE -Pn --max-rtt-timeout 200ms --disable-arp-ping \
-                --host-timeout 30s -oX {os.path.normcase(xml_res_file)} -iL {os.path.normcase(temp_hosts_nmap)}'
-
+                cmd_str = f'nmap.exe -sn -n -PE -Pn --max-rtt-timeout 200ms --disable-arp-ping' + \
+                    f' --host-timeout 30s -oX {os.path.normcase(xml_res_file)} -iL {os.path.normcase(temp_hosts_nmap)}'
                 log.debug(cmd_str)
                 cmd_res = subprocess.run(
                     cmd_str,
@@ -67,7 +67,7 @@ def search_for_dead(one_cycle: bool = False) -> None:
                     text=True,
                     capture_output=True,
                 )
-                log.debug(cmd_res.stdout)
+                log.debug(re.sub(r'[\n\r]+', r'\\n ', cmd_res.stdout))
                 if cmd_res.returncode:
                     log.info(cmd_res.stderr)
                     log.error(f'ERROR! Failed to get hosts status')
