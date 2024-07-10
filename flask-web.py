@@ -1,3 +1,4 @@
+import logging
 import ipaddress
 import json
 import re
@@ -7,8 +8,9 @@ from flask import (Flask, render_template, request, jsonify)
 from sql_connection import SqlConnection
 from configuration import Config
 
+logger = logging.getLogger('flask-web')
 log_file = Path(Config.log_files_path) / f'{Path(__file__).stem}.log'
-logger = Config.config_logger('web_app', file=log_file, add_root_file=True)
+Config.config_logger(file=log_file)
 
 show_list = ['ipv4', 'name', 'os', 'owner', 'status', 'type', 'productType', 'version',
              'updated',  'ssh', 'http', 'rdp', 'https', 'description']

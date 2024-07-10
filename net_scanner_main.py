@@ -1,4 +1,5 @@
 import os
+import logging
 import subprocess
 import time
 import ipaddress
@@ -10,7 +11,8 @@ from refresher import search_for_dead
 from scanner import scan_networks
 from audc_scanner import run_audc_scanner
 
-log = Config.config_logger('main', file=Config.log_file)
+log = logging.getLogger('main')
+Config.config_logger(Config.log_file)
 
 
 def test_for_new_networks(sql_handler: SqlConnection) -> list[tuple]:

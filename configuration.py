@@ -11,6 +11,7 @@ import sys
 import os
 from enum import Enum
 import xml.etree.ElementTree as eT
+from typing import Optional
 
 
 class Config:
@@ -20,7 +21,7 @@ class Config:
     log_files_path.mkdir(exist_ok=True)
     tmp_folder_path = Path(__file__).parent / 'tmp'
     tmp_folder_path.mkdir(exist_ok=True)
-    log_file = os.path.join(log_files_path, 'netscan_main_log.txt')
+    log_file = os.path.join(log_files_path, 'netscan.log')
     search_for_dead_period = 4
     search_for_dead_burst = 5
     sleep_between_c_networks_scan = 10
@@ -81,36 +82,30 @@ class Config:
     hosts_names_str = ','.join([*sql_fields])
 
     @staticmethod
-    def config_logger(logger_name: str, file: str | Path = '', debug='yes', add_root_file: bool = False) -> logging.Logger:
+    def config_logger(file: str | Path = '', filter_logger: Optional[logging.Logger] = None, debug='yes') -> None:
         format_str: str = '%(levelname)-7s: %(name)-12s: %(message)s'
         low_level = logging.DEBUG if debug == 'yes' else logging.INFO
         logging.basicConfig(level=low_level, format=format_str)
-        log: logging.Logger = logging.getLogger(logger_name)
-        if len(log.handlers):
-            log.debug(f'the logger {logger_name} already exists and has handlers - skip adding new one')
-            return log
         if file:
             # configure file log handler
             formatter: logging.Formatter = logging.Formatter('%(asctime)s ' + format_str)
             log_file_handler = RotatingFileHandler(file, maxBytes=100_000_000, backupCount=5)
             log_file_handler.setFormatter(formatter)
             log_file_handler.setLevel(logging.DEBUG)
-            if add_root_file:
-                root_logger: logging.Logger = logging.getLogger()
-                for handler in root_logger.handlers:
-                    if isinstance(handler, logging.FileHandler):
-                        root_logger.info(f'Root logger already has a file handler: {handler.baseFilename} - '
-                                         f'skip adding new one')
+            root_logger: logging.Logger = logging.getLogger()
+            for handler in root_logger.handlers:
+                if isinstance(handler, logging.FileHandler):
+                    root_logger.debug(f'Root logger already has a file handler: {handler.baseFilename}')
+                    if handler.baseFilename == log_file_handler.baseFilename:
+                        root_logger.warning(f'Root logger already has a file handler with the same file: {file}'
+                                            ' (no need to add another one)')
                         break
-                else:
-                    root_logger.addHandler(log_file_handler)
             else:
-                if log.handlers:
-                    log.debug(f'the logger {logger_name} already exists and has handlers - new handler will not be added')
-                else:
-                    log.addHandler(log_file_handler)
-        log.info(f'-- Start {logger_name=} ({file=})--')
-        return log
+                if filter_logger:
+                    log_file_handler.addFilter(logging.Filter(name=filter_logger.name))
+                root_logger.addHandler(log_file_handler)
+        elif filter_logger:
+            raise Exception('filter_logger is not None, but file is empty')
 
 
 class XmlParser:

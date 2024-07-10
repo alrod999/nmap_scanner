@@ -1,5 +1,5 @@
 from pathlib import Path
-
+import logging
 import aiohttp
 import asyncio
 import time
@@ -7,6 +7,10 @@ import ipaddress
 from datetime import datetime
 from sql_connection import SqlConnection, remove_bad_symbols
 from configuration import Config
+
+log = logging.getLogger('audc_sc')
+log_file = Path(Config.log_files_path) / f'{__name__}.log'
+Config.config_logger(file=log_file, filter_logger=log)
 
 INTER_SCAN_DELAY = 1200
 
@@ -47,8 +51,6 @@ async def set_concurrent_clients(hosts):
 
 
 def run_audc_scanner(one_loop=False):
-    log_file = Path(Config.log_files_path) / f'{__name__}.log'
-    log = Config.config_logger('audc_sc', file=log_file, )
     sql = SqlConnection()
     while True:
         try:

@@ -1,3 +1,4 @@
+import logging
 import re
 import time
 import os
@@ -9,8 +10,12 @@ from configuration import Config, XmlParser
 from scanner import scan_networks
 from sql_connection import SqlConnection
 
+log = logging.getLogger('refresher')
+# log_file = os.path.join(Config.log_files_path, f'{__name__}.log')
+# Config.config_logger(file=log_file)
 
-def update_host_status(xml_res_file: Path | str, log: Logger) -> set[str]:
+
+def update_host_status(xml_res_file: Path | str) -> set[str]:
     rt = XmlParser(xml_res_file)
     count = 0
     ip_set = set()
@@ -31,8 +36,6 @@ def update_host_status(xml_res_file: Path | str, log: Logger) -> set[str]:
 
 
 def search_for_dead(one_cycle: bool = False) -> None:
-    log_file = os.path.join(Config.log_files_path, f'{__name__}.log')
-    log = Config.config_logger('refresher', file=log_file)
     xml_res_file = Config.tmp_folder_path / 'nmap_search_for_dead.xml'
     temp_hosts_nmap = Config.tmp_folder_path / 'temp_hosts_nmap.txt'
 
@@ -58,8 +61,8 @@ def search_for_dead(one_cycle: bool = False) -> None:
                         fh.write(f'{ipv4} ')
                         hosts_ip_set.add(ipv4)
                 log.info(f'Process [{i}:{i + 256}] hosts in the "hosts" table')
-                cmd_str = f'nmap.exe -sn -n -PE -Pn --max-rtt-timeout 200ms --disable-arp-ping' + \
-                    f' --host-timeout 30s -oX {os.path.normcase(xml_res_file)} -iL {os.path.normcase(temp_hosts_nmap)}'
+                cmd_str = (f'nmap.exe -sn -n -PE -Pn --max-rtt-timeout 200ms --disable-arp-ping --host-timeout'
+                           f' 30s -oX {os.path.normcase(xml_res_file)} -iL {os.path.normcase(temp_hosts_nmap)}')
                 log.debug(cmd_str)
                 cmd_res = subprocess.run(
                     cmd_str,
@@ -73,7 +76,7 @@ def search_for_dead(one_cycle: bool = False) -> None:
                     log.error(f'ERROR! Failed to get hosts status')
                 else:
                     log.info(f'The scanning hosts states passed successfully')
-                alive_ip_set |= update_host_status(xml_res_file, log=log)
+                alive_ip_set |= update_host_status(xml_res_file)
                 time.sleep(Config.search_for_dead_period)
 
             dead_ip_set = hosts_ip_set - alive_ip_set

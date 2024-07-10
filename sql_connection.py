@@ -1,13 +1,10 @@
-import os
 import re
 import sqlite3
 import logging
 from datetime import datetime
-from pathlib import Path
 from configuration import Config as cfg
 
-log_file = Path(cfg.log_files_path) / f'{__name__}.log'
-log = cfg.config_logger('sql_client', file=log_file)
+log = logging.getLogger('sql_client')
 
 
 class SqlConnection:
@@ -54,7 +51,7 @@ class SqlConnection:
             sql_params_list.append(f"{key}={delimiter}{remove_bad_symbols(host_obj[key])}{delimiter}")
         sql_params = ', '.join(sql_params_list)
         cmd = f"UPDATE hosts SET {sql_params},updated='{current_date}' WHERE ipv4='{host_obj['ipv4']}'"
-        print(cmd)
+        log.debug(cmd)
         if not self.cursor.execute(cmd).rowcount:
             for key in cfg.fields_defaults:
                 if not host_obj.get(key): host_obj[key] = cfg.fields_defaults[key]

@@ -1,3 +1,4 @@
+import logging
 import subprocess
 import os
 import re
@@ -6,7 +7,7 @@ import socket
 from datetime import datetime
 from configuration import Config, XmlParser
 
-log = Config.config_logger('scanner', file=Config.log_file)
+log = logging.getLogger('scanner')
 
 
 def scan_networks(
