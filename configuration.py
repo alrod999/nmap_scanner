@@ -2,45 +2,42 @@
 default global configuration for the application,
 the configuration is overridden by appsettings.json file settings
 """
-
 from pathlib import Path
 import ipaddress
 import logging
 from logging.handlers import RotatingFileHandler
-import sys
-import os
-from enum import Enum
 import xml.etree.ElementTree as eT
 from typing import Optional
 
 
 class Config:
-    ALLOW_SCAN = True
-    scanner_app_name = 'netscan_app'
+    ALLOW_SCAN: bool = True
+    ALLOW_AUDC_PLUGIN: bool = False
+    scanner_app_name: str = 'netscan_app'
     log_files_path: Path = Path(__file__).parent / 'logs'
     log_files_path.mkdir(exist_ok=True)
-    tmp_folder_path = Path(__file__).parent / 'tmp'
+    tmp_folder_path: Path = Path(__file__).parent / 'tmp'
     tmp_folder_path.mkdir(exist_ok=True)
-    log_file = os.path.join(log_files_path, 'netscan.log')
-    search_for_dead_period = 4
-    search_for_dead_burst = 5
-    sleep_between_c_networks_scan = 10
-    filter_os_for_AUDC_scan = "os<>'Windows' AND os<>'JUNOS' AND os<>'iLO' AND os<>'ESXi' AND \
+    log_file: Path = log_files_path / 'netscan.log'
+    search_for_dead_period: int = 4
+    search_for_dead_burst: int = 5
+    sleep_between_c_networks_scan: int = 10
+    filter_os_for_AUDC_scan: str = "os<>'Windows' AND os<>'JUNOS' AND os<>'iLO' AND os<>'ESXi' AND \
     os<>'FreeBSD' AND os<>'OpenBSD' AND os<>'Data ONTAP' and os<>'IOS' AND os<>'AOS' AND os<>'FreeNAS' \
     AND os<>'Android' AND os<>'DESQview/X' AND os<>'Solaris' AND os<>'CyanogenMod'"
 
-    selected_networks = ('10.8.0.0/16', '10.3.0.0/16')
-    exclude_networks = (
+    selected_networks: tuple[str] | list[str] = ('10.8.0.0/16', '10.3.0.0/16')
+    exclude_networks: tuple[str] | list[str] = (
         '10.44.0.0/16', '10.128.0.0/16', '10.255.0.0/16', '10.250.0.0/16',
         '10.91.0.0/16', '10.191.0.0/16', '10.66.0.0/16', '10.59.0.0/16',
         '10.22.0.0/16',
     )
-    exclude_networks_obj_list = [ipaddress.ip_network(net) for net in exclude_networks]
-    exclude_file = tmp_folder_path / f'exclude_networks.txt'
+    exclude_networks_obj_list: list[ipaddress] = [ipaddress.ip_network(net) for net in exclude_networks]
+    exclude_file: Path = tmp_folder_path / f'exclude_networks.txt'
     with open(exclude_file, 'w') as fh:
         fh.write('\n'.join(exclude_networks))
 
-    check_ports_dict = {'T:22': 'ssh', 'T:80': 'http', 'T:443': 'https', 'T:3389': 'rdp'}
+    check_ports_dict: dict[str, str] = {'T:22': 'ssh', 'T:80': 'http', 'T:443': 'https', 'T:3389': 'rdp'}
     sql_fields: dict[str, str] = {
         'ipv4': 'char(17) primary key',
         'name': 'char(32)',
@@ -72,14 +69,14 @@ class Config:
         'audc': 'int',
         'scanned': 'int',
         }
-    fields_defaults = {}
+    fields_defaults: dict = {}
     for prot in check_ports_dict:
         if check_ports_dict[prot] in sql_fields.keys():
             fields_defaults[check_ports_dict[prot]] = 'x'
     for key in sql_fields:
         if key not in fields_defaults:
             fields_defaults[key] = ''
-    hosts_names_str = ','.join([*sql_fields])
+    hosts_names_str: str = ','.join([*sql_fields])
 
     @staticmethod
     def config_logger(file: str | Path = '', filter_logger: Optional[logging.Logger] = None, debug='yes') -> None:
