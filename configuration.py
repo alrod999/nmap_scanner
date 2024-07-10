@@ -13,6 +13,7 @@ from typing import Optional
 class Config:
     ALLOW_SCAN: bool = True
     ALLOW_AUDC_PLUGIN: bool = False
+    web_app_port: int = 5000
     scanner_app_name: str = 'netscan_app'
     log_files_path: Path = Path(__file__).parent / 'logs'
     log_files_path.mkdir(exist_ok=True)

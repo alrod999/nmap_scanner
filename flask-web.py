@@ -274,4 +274,7 @@ options: {{items: ['&#9989;', '&#9760;']}} }}")
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    try:
+        app.run(debug=True, host='0.0.0.0', port=str(Config.web_app_port))
+    except Exception as ex:
+        logger.exception('An exception happened during running Flask app', exc_info=ex)
