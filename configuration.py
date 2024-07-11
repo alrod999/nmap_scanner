@@ -13,6 +13,7 @@ from typing import Optional
 class Config:
     ALLOW_SCAN: bool = True
     ALLOW_AUDC_PLUGIN: bool = False
+    START_WEB_APP: bool = True
     web_app_port: int = 5000
     scanner_app_name: str = 'netscan_app'
     log_files_path: Path = Path(__file__).parent / 'logs'
@@ -28,11 +29,7 @@ class Config:
     AND os<>'Android' AND os<>'DESQview/X' AND os<>'Solaris' AND os<>'CyanogenMod'"
 
     selected_networks: tuple[str] | list[str] = ('10.8.0.0/16', '10.3.0.0/16')
-    exclude_networks: tuple[str] | list[str] = (
-        '10.44.0.0/16', '10.128.0.0/16', '10.255.0.0/16', '10.250.0.0/16',
-        '10.91.0.0/16', '10.191.0.0/16', '10.66.0.0/16', '10.59.0.0/16',
-        '10.22.0.0/16',
-    )
+    exclude_networks: tuple[str] | list[str] = ()
     exclude_networks_obj_list: list[ipaddress] = [ipaddress.ip_network(net) for net in exclude_networks]
     exclude_file: Path = tmp_folder_path / f'exclude_networks.txt'
     with open(exclude_file, 'w') as fh:
