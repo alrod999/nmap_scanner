@@ -9,7 +9,7 @@ from configuration import Config
 from sql_connection import SqlConnection
 from refresher import search_for_dead
 from scanner import scan_networks
-from audc_scanner import run_audc_scanner
+from plugins.audc_scanner import run_audc_scanner
 
 log = logging.getLogger('main')
 Config.config_logger(Config.log_file)
@@ -53,10 +53,12 @@ if __name__ == '__main__':
     sql = SqlConnection()
     if check_process_is_running(sql, Config.scanner_app_name):
         exit(1)
+    log.info('Start the main scanner')
+    log.info('Start the search_for_dead process')
     p_refresher = Process(target=search_for_dead,)
     p_refresher.daemon = True
     p_refresher.start()
-    # Spawn the AUDC boards scanner-refresher
+    log.info('Start the run_audc_scanner process')
     p_audc_scanner = Process(target=run_audc_scanner,)
     p_audc_scanner.daemon = True
     p_audc_scanner.start()

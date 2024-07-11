@@ -2,12 +2,15 @@
 default global configuration for the application,
 the configuration is overridden by appsettings.json file settings
 """
+import sys
 from pathlib import Path
 import ipaddress
 import logging
 from logging.handlers import RotatingFileHandler
 import xml.etree.ElementTree as eT
 from typing import Optional
+
+sys.path.insert(0, Path(__file__).parent)
 
 
 class Config:
