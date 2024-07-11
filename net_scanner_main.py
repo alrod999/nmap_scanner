@@ -48,7 +48,7 @@ def check_process_is_running(sql_handler: SqlConnection, name: str, update: bool
 if __name__ == '__main__':
     sql = SqlConnection()
     if Config.START_WEB_APP and not check_process_is_running(sql, Config.web_app_name):
-        command = ["python", "flask-web.py"]
+        command = ["python", f"web_app/flask-web.py"]
         log.info(f'Start the {Config.web_app_name} application ({command})')
         # Start the command in a non-blocking way
         web_process: subprocess.Popen = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
