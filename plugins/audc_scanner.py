@@ -9,8 +9,9 @@ from sql_connection import SqlConnection, remove_bad_symbols
 from configuration import Config
 
 log = logging.getLogger('audc_sc')
-log_file = Path(Config.log_files_path) / f'{__name__}.log'
-Config.config_logger(file=log_file, filter_logger=log)
+# Log messages in separate log file
+# log_file = Path(Config.log_files_path) / f'{__name__}.log'
+# Config.config_logger(file=log_file, filter_logger=log)
 
 INTER_SCAN_DELAY = 1200
 
