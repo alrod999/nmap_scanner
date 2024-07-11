@@ -19,6 +19,7 @@ class Config:
     START_WEB_APP: bool = True
     web_app_port: int = 5000
     scanner_app_name: str = 'netscan_app'
+    web_app_name: str = 'flask_app'
     log_files_path: Path = Path(__file__).parent / 'logs'
     log_files_path.mkdir(exist_ok=True)
     tmp_folder_path: Path = Path(__file__).parent / 'tmp'

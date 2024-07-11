@@ -28,7 +28,7 @@ def get_networks_for_scan(sql_handler: SqlConnection) -> list[str]:
     return [el[0] for el in sql_handler.cursor.execute('SELECT network FROM b_networks').fetchall()]
 
 
-def check_process_is_running(sql_handler: SqlConnection, name: str, update: bool = True) -> bool:
+def check_process_is_running(sql_handler: SqlConnection, name: str, update: bool = True, pid: int = -1) -> bool:
     running_app = sql_handler.get_all_rows_in_table('applications', select='pid', sql_filter=f'application="{name}"')
     if not running_app:
         return False
@@ -42,24 +42,37 @@ def check_process_is_running(sql_handler: SqlConnection, name: str, update: bool
         log.info(f'The {name} process with {pid=} is already running')
         return True
     log.info(f'The {name} process with {pid=} is not running')
-    if update:
-        my_pid: int = os.getpid()
-        sql_handler.update_table('applications', ('pid',), (my_pid,), f'application="{name}"', update_date=True)
     return False
 
 
 if __name__ == '__main__':
-    # Spawn the hosts refresher (a scanner
     sql = SqlConnection()
+    if Config.START_WEB_APP and not check_process_is_running(sql, Config.web_app_name):
+        command = ["python", "flask-web.py"]
+        log.info(f'Start the {Config.web_app_name} application ({command})')
+        # Start the command in a non-blocking way
+        web_process: subprocess.Popen = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        sql.update_table(
+            'applications', ('pid',),
+            (web_process.pid,),
+            f'application="{Config.web_app_name}"',
+            update_date=True
+        )
     if check_process_is_running(sql, Config.scanner_app_name):
         exit(1)
-    log.info('Start the main scanner')
-    log.info('Start the search_for_dead process')
-    p_refresher = Process(target=search_for_dead,)
+    log.info('== Start the main process of the scanner ==')
+    sql.update_table(
+        'applications', ('pid',),
+        (os.getpid(),),
+        f'application="{Config.scanner_app_name}"',
+        update_date=True
+    )
+    log.info('Start the refresher (search_for_dead process)')
+    p_refresher: Process = Process(target=search_for_dead,)
     p_refresher.daemon = True
     p_refresher.start()
-    log.info('Start the run_audc_scanner process')
-    p_audc_scanner = Process(target=run_audc_scanner,)
+    log.info('Start the AUDC plugin (run_audc_scanner process)')
+    p_audc_scanner: Process = Process(target=run_audc_scanner,)
     p_audc_scanner.daemon = True
     p_audc_scanner.start()
     sql.update_table('b_networks', ('status',), ('idle',), update_date=False, )
