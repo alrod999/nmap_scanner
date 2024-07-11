@@ -1,10 +1,13 @@
+from pathlib import Path
+import sys
 import logging
 import ipaddress
 import json
 import re
-from pathlib import Path
 from urllib.parse import unquote_plus
 from flask import (Flask, render_template, request, jsonify)
+
+sys.path.insert(0, Path(__file__).parent)
 from sql_connection import SqlConnection
 from configuration import Config
 
