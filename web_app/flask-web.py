@@ -1,15 +1,15 @@
-from pathlib import Path
 import sys
+from pathlib import Path
 import logging
 import ipaddress
 import json
 import re
 from urllib.parse import unquote_plus
 from flask import (Flask, render_template, request, jsonify)
-
-sys.path.insert(0, Path(__file__).parent.parent)
-from sql_connection import SqlConnection
+base_dir = str(Path(__file__).parent.parent)
+if base_dir not in sys.path: sys.path.append(base_dir)
 from configuration import Config
+from sql_connection import SqlConnection
 
 logger = logging.getLogger('flask-web')
 log_file = Path(Config.log_files_path) / f'{Path(__file__).stem}.log'

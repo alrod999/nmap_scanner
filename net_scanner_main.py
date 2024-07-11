@@ -58,6 +58,16 @@ if __name__ == '__main__':
             f'application="{Config.web_app_name}"',
             update_date=True
         )
+        time.sleep(3)
+        if not check_process_is_running(sql, Config.web_app_name):
+            log.error(f'The {Config.web_app_name} application failed to start!')
+            stdout, stderr = web_process.communicate()
+            log.error(f'{stdout=}\n{stderr=}')
+            if ret_code := web_process.poll():
+                log.error(f"Process {Config.web_app_name} finished with return code: {ret_code}")
+            else:
+                log.error(f"{Config.web_app_name} Process is still running?")
+            exit(1)
     if check_process_is_running(sql, Config.scanner_app_name):
         exit(1)
     log.info('== Start the main process of the scanner ==')
