@@ -1,3 +1,4 @@
+import sys
 import os
 import logging
 import subprocess
@@ -39,9 +40,9 @@ def check_process_is_running(sql_handler: SqlConnection, name: str, update: bool
     )
     log.debug(res.stdout + res.stderr)
     if str(pid) in res.stdout:
-        log.info(f'The {name} process with {pid=} is already running')
+        log.info(f'The {name} process with {pid=} is already running, my_PID={os.getpid()=}')
         return True
-    log.info(f'The {name} process with {pid=} is not running')
+    log.info(f'The {name} process with {pid=} is not running, {os.getpid()=}')
     return False
 
 
@@ -66,10 +67,10 @@ if __name__ == '__main__':
             if ret_code := web_process.poll():
                 log.error(f"Process {Config.web_app_name} finished with return code: {ret_code}")
             else:
-                log.error(f"{Config.web_app_name} Process is still running?")
-            exit(1)
+                log.error(f"{Config.web_app_name} Process is still running? {os.getpid()=}")
+            os._exit(1)
     if check_process_is_running(sql, Config.scanner_app_name):
-        exit(1)
+        os._exit(1)
     log.info('== Start the main process of the scanner ==')
     sql.update_table(
         'applications', ('pid',),
@@ -149,6 +150,6 @@ if __name__ == '__main__':
                 found_all += b_hosts
         except Exception as ex:
             log.exception("ERROR! Exception in while loop", exc_info=True)
-            exit(1)
+            sys.exit(1)
         log.info(f'Found all {found_all} hosts during current scan')
-    exit(0)
+    sys.exit(0)
