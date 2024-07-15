@@ -26,7 +26,7 @@ def get_networks_for_scan(sql_handler: SqlConnection) -> list[str]:
     # Prioritize the networks that were not updated yet
     if res := test_for_new_networks(sql_handler):
         return res
-    return [el[0] for el in sql_handler.cursor.execute('SELECT network FROM b_networks').fetchall()]
+    return [el[0] for el in sql_handler.cursor.execute('SELECT network FROM b_networks WHERE status != "invalid"').fetchall()]
 
 
 def check_process_is_running(sql_handler: SqlConnection, name: str, update: bool = True, pid: int = -1) -> bool:
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     p_audc_scanner: Process = Process(target=run_audc_scanner,)
     p_audc_scanner.daemon = True
     p_audc_scanner.start()
-    sql.update_table('b_networks', ('status',), ('idle',), update_date=False, )
+    sql.update_table('b_networks', ('status',), ('idle',), 'status!="invalid"', update_date=False, )
     while True:
         try:
             if not Config.ALLOW_SCAN:
@@ -104,6 +104,13 @@ if __name__ == '__main__':
                 subnet_ab = ipaddress.ip_network(subnet_ab_str)
                 if not subnet_ab.is_private:
                     log.info(f'The network {subnet_ab} is not private - cannot run scan on public networks')
+                    sql.update_table(
+                        'b_networks',
+                        ('status', ),
+                        ('invalid',),
+                        f"network='{subnet_ab_str}'",
+                        update_date=True,
+                    )
                     continue
                 b_net_hosts_num[subnet_ab_str] = 0
                 prefix_len: int = 24 if subnet_ab.prefixlen < 24 else subnet_ab.prefixlen
