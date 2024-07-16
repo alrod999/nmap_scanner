@@ -16,10 +16,10 @@ sys.path.insert(0, Path(__file__).parent)
 class Config:
     ALLOW_SCAN: bool = True
     ALLOW_AUDC_PLUGIN: bool = False
-    START_WEB_APP: bool = True
+    START_WEB_APP: bool = False
     web_app_port: int = 5000
     web_app_name: str = 'flask_app'
-    web_server_app_path: str  = 'web_app/waitress_server.py'
+    web_server_app_path: str = 'web_app/waitress_server.py'
     scanner_app_name: str = 'netscan_app'
     root_path: Path = Path(__file__).parent
     log_files_path: Path = root_path / 'logs'
