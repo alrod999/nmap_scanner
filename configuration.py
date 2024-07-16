@@ -21,9 +21,10 @@ class Config:
     web_app_name: str = 'flask_app'
     web_server_app_path: str  = 'web_app/waitress_server.py'
     scanner_app_name: str = 'netscan_app'
-    log_files_path: Path = Path(__file__).parent / 'logs'
+    root_path: Path = Path(__file__).parent
+    log_files_path: root_path / 'logs'
     log_files_path.mkdir(exist_ok=True)
-    tmp_folder_path: Path = Path(__file__).parent / 'tmp'
+    tmp_folder_path: Path = root_path / 'tmp'
     tmp_folder_path.mkdir(exist_ok=True)
     log_file: Path = log_files_path / 'netscan.log'
     search_for_dead_period: int = 4

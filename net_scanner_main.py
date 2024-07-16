@@ -29,7 +29,7 @@ def get_networks_for_scan(sql_handler: SqlConnection) -> list[str]:
     return [el[0] for el in sql_handler.cursor.execute('SELECT network FROM b_networks WHERE status != "invalid"').fetchall()]
 
 
-def check_process_is_running(sql_handler: SqlConnection, name: str, update: bool = True, pid: int = -1) -> bool:
+def check_process_is_running(sql_handler: SqlConnection, name: str) -> bool:
     running_app = sql_handler.get_all_rows_in_table('applications', select='pid', sql_filter=f'application="{name}"')
     if not running_app:
         return False

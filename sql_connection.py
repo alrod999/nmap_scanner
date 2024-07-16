@@ -9,7 +9,7 @@ log = logging.getLogger('sql_client')
 
 class SqlConnection:
 
-    def __init__(self, db='net_scan_data.db'):
+    def __init__(self, db=cfg.root_path / 'net_scan_data.db'):
         self.conn = sqlite3.connect(db, timeout=10)
         self.cursor = self.conn.cursor()
         self.cursor.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='hosts'")
