@@ -22,7 +22,7 @@ class Config:
     web_server_app_path: str  = 'web_app/waitress_server.py'
     scanner_app_name: str = 'netscan_app'
     root_path: Path = Path(__file__).parent
-    log_files_path: root_path / 'logs'
+    log_files_path: Path = root_path / 'logs'
     log_files_path.mkdir(exist_ok=True)
     tmp_folder_path: Path = root_path / 'tmp'
     tmp_folder_path.mkdir(exist_ok=True)
