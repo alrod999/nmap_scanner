@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 import subprocess
 import os
 import re
@@ -11,14 +12,26 @@ log = logging.getLogger('scanner')
 
 
 def scan_networks(
-        sql,
-        subnet_a=None,
-        subnet_b=None,
-        subnet_c=None,
-        full_net_pattern=None,
-        xml_res_file=Config.tmp_folder_path / 'nmap_res.xml',
-        only_public=True,
+        sql: object,
+        subnet_a: Optional[int] = None,
+        subnet_b: Optional[int] = None,
+        subnet_c: Optional[int] = None,
+        full_net_pattern: Optional[str] = None,
+        xml_res_file: str = Config.tmp_folder_path / 'nmap_res.xml',
+        only_public: bool = True,
+        discovery_mode: str = 'PS',
         ) -> int:
+    """ scan a subnet or a host for open ports for and update the hosts table
+    :param sql:
+    :param subnet_a:
+    :param subnet_b:
+    :param subnet_c:
+    :param full_net_pattern:
+    :param xml_res_file:
+    :param only_public:
+    :param discovery_mode: nmap discovery mode - PS, PE
+    :return:
+    """
     pn_param: str = ''
     hostname: str = ''
     found: int = 0
@@ -45,7 +58,7 @@ def scan_networks(
         pn_param = '-Pn'
     log.info(f'start scanning the {scan_pattern}')
     cmd_str = f'nmap.exe -p {",".join([*Config.check_ports_dict])} -O --max-rtt-timeout 100ms --disable-arp-ping \
---host-timeout 30s -sT -PE {pn_param} -oX {os.path.normcase(xml_res_file)} --excludefile {Config.exclude_file} {scan_pattern}'
+--host-timeout 30s -sT -{discovery_mode} {pn_param} -oX {os.path.normcase(xml_res_file)} --excludefile {Config.exclude_file} {scan_pattern}'
 
     log.debug(cmd_str)
     cmd_res = subprocess.run(
