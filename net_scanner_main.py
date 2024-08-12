@@ -18,7 +18,7 @@ Config.config_logger(Config.log_file)
 
 parser = argparse.ArgumentParser(description="nmap scanner frontend")
 parser.add_argument("--webserver", '-s', action='store_true', help="Start local web server")
-parser.add_argument("--nowebserver", '-s', action='store_true', help="do not start local web server")
+parser.add_argument("--nowebserver", '-n', action='store_true', help="do not start local web server")
 parser.add_argument("--restart", '-r', action='store_true', help="terminate running app and start new one")
 parser.add_argument("--audc", '-a', action='store_true', help="run audc plugin scanner")
 args = parser.parse_args()
