@@ -11,7 +11,7 @@ from configuration import Config
 from sql_connection import SqlConnection
 from refresher import search_for_dead
 from scanner import scan_networks
-from plugins.audc_scanner import run_audc_scanner
+from plugins.audc_scanner import run_audc_scanner, run_audc_scanner_old_hw
 
 log = logging.getLogger('main')
 Config.config_logger(Config.log_file)
@@ -105,8 +105,12 @@ if __name__ == '__main__':
     p_refresher.daemon = True
     p_refresher.start()
     if Config.ALLOW_AUDC_PLUGIN:
-        log.info('Start the AUDC plugin (run_audc_scanner process)')
+        log.info('== Start the AUDC plugin (run_audc_scanner process)')
         p_audc_scanner: Process = Process(target=run_audc_scanner,)
+        p_audc_scanner.daemon = True
+        p_audc_scanner.start()
+        log.info('== Start old AUDC HW scanner ')
+        p_audc_scanner: Process = Process(target=run_audc_scanner_old_hw,)
         p_audc_scanner.daemon = True
         p_audc_scanner.start()
     sql.update_table('b_networks', ('status',), ('idle',), 'status!="invalid"', update_date=False, )
