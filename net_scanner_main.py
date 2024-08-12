@@ -104,10 +104,11 @@ if __name__ == '__main__':
     p_refresher: Process = Process(target=search_for_dead,)
     p_refresher.daemon = True
     p_refresher.start()
-    log.info('Start the AUDC plugin (run_audc_scanner process)')
-    p_audc_scanner: Process = Process(target=run_audc_scanner,)
-    p_audc_scanner.daemon = True
-    p_audc_scanner.start()
+    if Config.ALLOW_AUDC_PLUGIN:
+        log.info('Start the AUDC plugin (run_audc_scanner process)')
+        p_audc_scanner: Process = Process(target=run_audc_scanner,)
+        p_audc_scanner.daemon = True
+        p_audc_scanner.start()
     sql.update_table('b_networks', ('status',), ('idle',), 'status!="invalid"', update_date=False, )
     while True:
         try:

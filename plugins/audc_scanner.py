@@ -59,7 +59,7 @@ def run_audc_scanner(one_loop=False):
             audc_hosts = sql.cursor.execute(
                 f"SELECT ipv4,username,password FROM hosts WHERE " +
                 f"(status='up' AND http='ok' and {Config.filter_os_for_AUDC_scan})" +
-                f" and (type='' or type='AUDC')"
+                f" and type='') or type='AUDC'"
             ).fetchall()
             # audc_hosts = (('10.8.41.182', 'Admin', 'Admin'), ('10.8.94.152', '', ''),)
             hosts_to_scan = len(audc_hosts)
