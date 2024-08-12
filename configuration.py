@@ -17,6 +17,7 @@ class Config:
     ALLOW_SCAN: bool = True
     ALLOW_AUDC_PLUGIN: bool = False
     START_WEB_APP: bool = False
+    RESTART_RUNNING_APP: bool = False
     web_app_port: int = 5000
     web_app_name: str = 'flask_app'
     web_server_app_path: str = 'web_app/waitress_server.py'

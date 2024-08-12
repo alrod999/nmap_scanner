@@ -1,4 +1,5 @@
 import sys
+import argparse
 import os
 import logging
 import subprocess
@@ -14,6 +15,22 @@ from plugins.audc_scanner import run_audc_scanner
 
 log = logging.getLogger('main')
 Config.config_logger(Config.log_file)
+
+parser = argparse.ArgumentParser(description="nmap scanner frontend")
+parser.add_argument("--webserver", '-s', action='store_true', help="Start local web server")
+parser.add_argument("--nowebserver", '-s', action='store_true', help="do not start local web server")
+parser.add_argument("--restart", '-r', action='store_true', help="terminate running app and start new one")
+parser.add_argument("--audc", '-a', action='store_true', help="run audc plugin scanner")
+args = parser.parse_args()
+
+if args.webserver:
+    Config.START_WEB_APP = True
+if args.nowebserver:
+    Config.START_WEB_APP = False
+if args.restart:
+    Config.RESTART_RUNNING_APP = True
+if args.audc:
+    Config.ALLOW_AUDC_PLUGIN = True
 
 
 def test_for_new_networks(sql_handler: SqlConnection) -> list[tuple]:
@@ -41,6 +58,11 @@ def check_process_is_running(sql_handler: SqlConnection, name: str) -> bool:
     log.debug(res.stdout + res.stderr)
     if str(pid) in res.stdout:
         log.info(f'The {name} process with {pid=} is already running, my_PID={os.getpid()=}')
+        if Config.RESTART_RUNNING_APP and name == Config.scanner_app_name:
+            log.info(f'{Config.RESTART_RUNNING_APP=} Terminate the {name} process with {pid=}')
+            res = subprocess.run(['taskkill.exe', '/F', '/PID', str(pid)], capture_output=True, text=True)
+            log.debug(res.stdout + res.stderr)
+            return False
         return True
     log.info(f'The {name} process with {pid=} is not running, {os.getpid()=}')
     return False
@@ -71,7 +93,7 @@ if __name__ == '__main__':
             os._exit(1)
     if check_process_is_running(sql, Config.scanner_app_name):
         os._exit(1)
-    log.info('== Start the main process of the scanner ==')
+    log.info(f'== Start the main process of the "{Config.scanner_app_name}" ==')
     sql.update_table(
         'applications', ('pid',),
         (os.getpid(),),
