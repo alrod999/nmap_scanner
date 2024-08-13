@@ -78,7 +78,7 @@ def check_process_is_running(sql_handler: SqlConnection, name: str, ) -> bool:
         return False
     pid, *_ = running_app[0]
     cmd: list[str] = [f'tasklist.exe', '/FI', f'PID eq {pid}', '/FI', 'IMAGENAME eq python.exe', '/NH']
-    log.debug(cmd.join(' '))
+    log.debug(' '.join(cmd))
     res = subprocess.run(cmd, capture_output=True, text=True)
     log.debug(res.stdout + res.stderr)
     if str(pid) in res.stdout:
