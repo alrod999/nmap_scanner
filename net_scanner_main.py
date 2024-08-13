@@ -17,7 +17,9 @@ from refresher import search_for_dead
 from scanner import scan_networks
 from plugins.audc_scanner import run_audc_scanner, run_audc_scanner_old_hw
 
+logging.basicConfig(level=(logging.DEBUG if Config.DEBUG else logging.INFO))
 log = logging.getLogger('main_tmp')
+
 
 parser = argparse.ArgumentParser(description="nmap scanner frontend")
 parser.add_argument("--webserver", '-s', action='store_true', help="Start local web server")
