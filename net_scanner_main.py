@@ -9,6 +9,8 @@ import time
 import ipaddress
 from datetime import datetime
 from multiprocessing import Process, Queue
+from typing import Optional
+
 from configuration import Config
 from sql_connection import SqlConnection
 from refresher import search_for_dead
@@ -65,9 +67,11 @@ def get_networks_for_scan(sql_handler: SqlConnection) -> list[str]:
     return [el[0] for el in sql_handler.cursor.execute('SELECT network FROM b_networks WHERE status != "invalid"').fetchall()]
 
 
-def check_process_is_running(sql_handler: SqlConnection, name: str) -> bool:
+def check_process_is_running(sql_handler: SqlConnection, name: str, log: Optional[logging.Logger] = None) -> bool:
+    if not log: log = logging.getLogger('check_process_is_running')
     running_app = sql_handler.get_all_rows_in_table('applications', select='pid', sql_filter=f'application="{name}"')
     if not running_app:
+        log.info(f'The {name} process is not found in DB')
         return False
     pid, *_ = running_app[0]
     res = subprocess.run(
@@ -96,7 +100,7 @@ if __name__ == '__main__':
     listener = Process(target=log_listener_process, args=(log_queue,))
     listener.start()
     sql = SqlConnection()
-    if Config.START_WEB_APP and not check_process_is_running(sql, Config.web_app_name):
+    if Config.START_WEB_APP and not check_process_is_running(sql, Config.web_app_name, log):
         command = ["./venv/Scripts/python.exe", Config.web_server_app_path]
         log.info(f'Start the {Config.web_app_name} application ({command})')
         # Start the command in a non-blocking way
@@ -117,7 +121,9 @@ if __name__ == '__main__':
             else:
                 log.error(f"{Config.web_app_name} Process is still running? {os.getpid()=}")
             os._exit(1)
-    if check_process_is_running(sql, Config.scanner_app_name):
+    if check_process_is_running(sql, Config.scanner_app_name, log):
+        print(f'exit {__file__} application')
+        listener.terminate()
         os._exit(1)
     log.info(f'== Start the main process of the "{Config.scanner_app_name}" ==')
     sql.update_table(
