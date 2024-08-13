@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 import ipaddress
 import logging
-from logging.handlers import RotatingFileHandler
+from logging.handlers import RotatingFileHandler, QueueHandler
 import xml.etree.ElementTree as eT
 from typing import Optional
 
@@ -18,6 +18,7 @@ class Config:
     ALLOW_AUDC_PLUGIN: bool = False
     START_WEB_APP: bool = False
     RESTART_RUNNING_APP: bool = False
+    DEBUG: bool = True
     web_app_port: int = 5000
     web_app_name: str = 'flask_app'
     web_server_app_path: str = 'web_app/waitress_server.py'
@@ -84,9 +85,24 @@ class Config:
     hosts_names_str: str = ','.join([*sql_fields])
 
     @staticmethod
-    def config_logger(file: str | Path = '', filter_logger: Optional[logging.Logger] = None, debug='yes') -> None:
+    def initiate_process_queue_logger(logger_name: str, log_queue: Optional[QueueHandler] = None, ) -> logging.Logger:
+        if log_queue:
+            root_logger = logging.getLogger()
+            root_logger.addHandler(logging.handlers.QueueHandler(log_queue))
+            root_logger.setLevel(logging.DEBUG if Config.DEBUG else logging.INFO)
+        logger = logging.getLogger(logger_name)
+        return logger
+
+    @staticmethod
+    def config_logger(
+            file: str | Path = '',
+            filter_logger: Optional[logging.Logger] = None,
+            debug: Optional[bool] = None
+    ) -> None:
         format_str: str = '%(levelname)-7s: %(name)-12s: %(message)s'
-        low_level = logging.DEBUG if debug == 'yes' else logging.INFO
+        if debug is None:
+            debug = Config.DEBUG
+        low_level = logging.DEBUG if debug else logging.INFO
         logging.basicConfig(level=low_level, format=format_str)
         if file:
             # configure file log handler

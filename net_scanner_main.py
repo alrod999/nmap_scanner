@@ -1,20 +1,19 @@
 import sys
+import multiprocessing
 import argparse
 import os
 import logging
+from logging.handlers import RotatingFileHandler
 import subprocess
 import time
 import ipaddress
 from datetime import datetime
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 from configuration import Config
 from sql_connection import SqlConnection
 from refresher import search_for_dead
 from scanner import scan_networks
 from plugins.audc_scanner import run_audc_scanner, run_audc_scanner_old_hw
-
-log = logging.getLogger('main')
-Config.config_logger(Config.log_file)
 
 parser = argparse.ArgumentParser(description="nmap scanner frontend")
 parser.add_argument("--webserver", '-s', action='store_true', help="Start local web server")
@@ -31,6 +30,26 @@ if args.restart:
     Config.RESTART_RUNNING_APP = True
 if args.audc:
     Config.ALLOW_AUDC_PLUGIN = True
+
+
+def log_listener_process(queue):
+    root_logger = logging.getLogger()
+    format_str: str = '%(levelname)-7s: %(name)-12s: %(message)s'
+    logging.basicConfig(level=(logging.DEBUG if Config.DEBUG else logging.INFO), format=format_str)
+    formatter: logging.Formatter = logging.Formatter('%(asctime)s ' + format_str)
+    log_file_handler = RotatingFileHandler(Config.log_file, maxBytes=100_000_000, backupCount=5)
+    log_file_handler.setFormatter(formatter)
+    log_file_handler.setLevel(logging.DEBUG)
+    root_logger.addHandler(log_file_handler)
+
+    while True:
+        try:
+            record = queue.get()
+            if record is None:  # Sentinel to stop the listener
+                break
+            root_logger.handle(record)
+        except Exception:
+            root_logger.exception('Error in logging')
 
 
 def test_for_new_networks(sql_handler: SqlConnection) -> list[tuple]:
@@ -69,6 +88,13 @@ def check_process_is_running(sql_handler: SqlConnection, name: str) -> bool:
 
 
 if __name__ == '__main__':
+    # log = logging.getLogger('main')
+    # Config.config_logger(Config.log_file)
+
+    log_queue = Queue()
+    log = Config.initiate_process_queue_logger('main', log_queue)
+    listener = Process(target=log_listener_process, args=(log_queue,))
+    listener.start()
     sql = SqlConnection()
     if Config.START_WEB_APP and not check_process_is_running(sql, Config.web_app_name):
         command = ["./venv/Scripts/python.exe", Config.web_server_app_path]
@@ -101,16 +127,16 @@ if __name__ == '__main__':
         update_date=True
     )
     log.info('Start the refresher (search_for_dead process)')
-    p_refresher: Process = Process(target=search_for_dead,)
+    p_refresher: Process = Process(target=search_for_dead, args=(False, log_queue,))
     p_refresher.daemon = True
     p_refresher.start()
     if Config.ALLOW_AUDC_PLUGIN:
         log.info('== Start the AUDC plugin (run_audc_scanner process)')
-        p_audc_scanner: Process = Process(target=run_audc_scanner,)
+        p_audc_scanner: Process = Process(target=run_audc_scanner, args=(False, log_queue,))
         p_audc_scanner.daemon = True
         p_audc_scanner.start()
         log.info('== Start old AUDC HW scanner ')
-        p_audc_scanner: Process = Process(target=run_audc_scanner_old_hw,)
+        p_audc_scanner: Process = Process(target=run_audc_scanner_old_hw, args=(False, log_queue,))
         p_audc_scanner.daemon = True
         p_audc_scanner.start()
     sql.update_table('b_networks', ('status',), ('idle',), 'status!="invalid"', update_date=False, )

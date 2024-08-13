@@ -2,6 +2,7 @@ import logging
 import re
 import time
 import os
+from logging.handlers import QueueHandler
 from pathlib import Path
 from logging import Logger
 import subprocess
@@ -35,7 +36,8 @@ def update_host_status(xml_res_file: Path | str) -> set[str]:
     return ip_set
 
 
-def search_for_dead(one_cycle: bool = False) -> None:
+def search_for_dead(one_cycle: bool = False, log_queue: QueueHandler = None) -> None:
+    log = Config.initiate_process_queue_logger('refresher', log_queue)
     xml_res_file = Config.tmp_folder_path / 'nmap_search_for_dead.xml'
     temp_hosts_nmap = Config.tmp_folder_path / 'temp_hosts_nmap.txt'
 

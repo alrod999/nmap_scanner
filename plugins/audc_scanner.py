@@ -1,6 +1,8 @@
+from typing import Optional
 import re
 from pathlib import Path
 import logging
+from logging.handlers import QueueHandler
 import aiohttp
 import asyncio
 import requests
@@ -9,12 +11,12 @@ import ipaddress
 from datetime import datetime
 
 from bs4 import BeautifulSoup
-from requests.auth import HTTPDigestAuth
+from requests.auth import HTTPDigestAuth, HTTPBasicAuth
 
 from sql_connection import SqlConnection, remove_bad_symbols
 from configuration import Config
 
-log = logging.getLogger('audc_sc')
+# log = logging.getLogger('audc_sc')
 # Log messages in separate log file
 # log_file = Path(Config.log_files_path) / f'{__name__}.log'
 # Config.config_logger(file=log_file, filter_logger=log)
@@ -87,7 +89,8 @@ async def set_concurrent_clients(hosts):
     return await asyncio.gather(*(audc_scanner(host) for host in hosts))
 
 
-def run_audc_scanner(one_loop=False):
+def run_audc_scanner(one_loop: bool = False, log_queue: QueueHandler = None):
+    log = Config.initiate_process_queue_logger('audc_sc', log_queue)
     sql = SqlConnection()
     while True:
         try:
@@ -106,7 +109,7 @@ def run_audc_scanner(one_loop=False):
                 results = asyncio.run(set_concurrent_clients(temp_hosts_list))
                 log.debug(f'The scan took {time.time() - start_time_stamp} seconds')
                 for res in results:
-                    if process_rest_result(sql, res):
+                    if process_rest_result(sql, res, log):
                         found_audc_hosts += 1
                         ip_c_net = ipaddress.ip_network(res['ip'] + '/24', False).network_address.__str__()
                         audc_c_networks[ip_c_net] = audc_c_networks.get(ip_c_net, 0) + 1
@@ -125,7 +128,14 @@ def run_audc_scanner(one_loop=False):
             time.sleep(INTER_SCAN_DELAY)
 
 
-def run_audc_scanner_old_hw(one_loop: bool = False, ip: str = '', user: str = '', password: str = ''):
+def run_audc_scanner_old_hw(
+        one_loop: bool = False,
+        log_queue: Optional[QueueHandler] = None,
+        ip: str = '',
+        user: str = '',
+        password: str = '',
+) -> None:
+    log = Config.initiate_process_queue_logger('audc_sc_ohw', log_queue)
     sql = SqlConnection()
     while True:
         # Get all alive AUDc hosts with http and os='embedded'
@@ -150,7 +160,7 @@ def run_audc_scanner_old_hw(one_loop: bool = False, ip: str = '', user: str = ''
                 res = requests.get(f'http://{ip}/SoftwareVersion', auth=HTTPDigestAuth(username, password))
                 result_dic['status'] = res.status_code
                 result_dic['headers'] = res.headers
-                if res.status_code == 200:
+                if res.status_code in (200, 203):
                     found_audc_hosts += 1
                     result_dic['result'] = 'OK!'
                     sp = BeautifulSoup(res.text, 'html.parser')
@@ -160,7 +170,7 @@ def run_audc_scanner_old_hw(one_loop: bool = False, ip: str = '', user: str = ''
                     for key in rest_2_sql_map:
                         if key in res_list:
                             result_dic['value'][key] = res_list[res_list.index(key) + 1]
-                    process_rest_result(sql, result_dic)
+                    process_rest_result(sql, result_dic, log)
                 else:
                     result_dic['value'] = res.text
             except:
@@ -173,7 +183,8 @@ def run_audc_scanner_old_hw(one_loop: bool = False, ip: str = '', user: str = ''
                   f' discovered {found_audc_hosts} old HW audc (out of {hosts_to_scan=})')
 
 
-def process_rest_result(sql, res) -> bool:
+def process_rest_result(sql, res, log: Optional[logging.Logger] = None) -> bool:
+    if not log: log = logging.getLogger('process_result')
     sql_update_list = []
     server = res["headers"].get("Server", "UNKNOWN")
     status = res.get('status', 0)
