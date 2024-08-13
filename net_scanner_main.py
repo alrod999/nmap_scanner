@@ -17,6 +17,8 @@ from refresher import search_for_dead
 from scanner import scan_networks
 from plugins.audc_scanner import run_audc_scanner, run_audc_scanner_old_hw
 
+log = logging.getLogger('main_tmp')
+
 parser = argparse.ArgumentParser(description="nmap scanner frontend")
 parser.add_argument("--webserver", '-s', action='store_true', help="Start local web server")
 parser.add_argument("--nowebserver", '-n', action='store_true', help="do not start local web server")
@@ -67,8 +69,7 @@ def get_networks_for_scan(sql_handler: SqlConnection) -> list[str]:
     return [el[0] for el in sql_handler.cursor.execute('SELECT network FROM b_networks WHERE status != "invalid"').fetchall()]
 
 
-def check_process_is_running(sql_handler: SqlConnection, name: str, log: Optional[logging.Logger] = None) -> bool:
-    if not log: log = logging.getLogger('check_process_is_running')
+def check_process_is_running(sql_handler: SqlConnection, name: str, ) -> bool:
     running_app = sql_handler.get_all_rows_in_table('applications', select='pid', sql_filter=f'application="{name}"')
     if not running_app:
         log.info(f'The {name} process is not found in DB')
@@ -95,12 +96,8 @@ if __name__ == '__main__':
     # log = logging.getLogger('main')
     # Config.config_logger(Config.log_file)
 
-    log_queue = Queue()
-    log = Config.initiate_process_queue_logger('main', log_queue)
-    listener = Process(target=log_listener_process, args=(log_queue,))
-    listener.start()
     sql = SqlConnection()
-    if Config.START_WEB_APP and not check_process_is_running(sql, Config.web_app_name, log):
+    if Config.START_WEB_APP and not check_process_is_running(sql, Config.web_app_name):
         command = ["./venv/Scripts/python.exe", Config.web_server_app_path]
         log.info(f'Start the {Config.web_app_name} application ({command})')
         # Start the command in a non-blocking way
@@ -121,10 +118,15 @@ if __name__ == '__main__':
             else:
                 log.error(f"{Config.web_app_name} Process is still running? {os.getpid()=}")
             os._exit(1)
-    if check_process_is_running(sql, Config.scanner_app_name, log):
-        print(f'exit {__file__} application')
-        listener.terminate()
+    if check_process_is_running(sql, Config.scanner_app_name):
+        log.info(f'exit {__file__} application the check_process_is_running is True')
+        sql.conn.close()
         os._exit(1)
+    log_queue = Queue()
+    log = Config.initiate_process_queue_logger('main', log_queue)
+    log.info('== start log_listener_process  ==')
+    listener = Process(target=log_listener_process, args=(log_queue,))
+    listener.start()
     log.info(f'== Start the main process of the "{Config.scanner_app_name}" ==')
     sql.update_table(
         'applications', ('pid',),
