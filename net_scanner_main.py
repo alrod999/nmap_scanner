@@ -19,7 +19,7 @@ from plugins.audc_scanner import run_audc_scanner, run_audc_scanner_old_hw
 
 logging.basicConfig(level=(logging.DEBUG if Config.DEBUG else logging.INFO))
 log = logging.getLogger('main_tmp')
-
+log.debug(f'{__file__} code is loaded')
 
 parser = argparse.ArgumentParser(description="nmap scanner frontend")
 parser.add_argument("--webserver", '-s', action='store_true', help="Start local web server")
@@ -77,10 +77,9 @@ def check_process_is_running(sql_handler: SqlConnection, name: str, ) -> bool:
         log.info(f'The {name} process is not found in DB')
         return False
     pid, *_ = running_app[0]
-    res = subprocess.run(
-        [f'tasklist.exe', '/FI', f'PID eq {pid}', '/FI', 'IMAGENAME eq python.exe', '/NH'],
-        capture_output=True, text=True
-    )
+    cmd: list[str] = [f'tasklist.exe', '/FI', f'PID eq {pid}', '/FI', 'IMAGENAME eq python.exe', '/NH']
+    log.debug(cmd.join(' '))
+    res = subprocess.run(cmd, capture_output=True, text=True)
     log.debug(res.stdout + res.stderr)
     if str(pid) in res.stdout:
         log.info(f'The {name} process with {pid=} is already running, my_PID={os.getpid()=}')
