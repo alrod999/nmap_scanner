@@ -71,6 +71,19 @@ def get_networks_for_scan(sql_handler: SqlConnection) -> list[str]:
     return [el[0] for el in sql_handler.cursor.execute('SELECT network FROM b_networks WHERE status != "invalid"').fetchall()]
 
 
+def check_my_pid_is_registered(sql_handler: SqlConnection,) -> bool:
+    name = Config.scanner_app_name
+    running_app = sql_handler.get_all_rows_in_table('applications', select='pid', sql_filter=f'application="{name}"')
+    if not running_app:
+        log.info(f'The {name} process is not found in DB')
+        return False
+    pid, *_ = running_app[0]
+    if pid == os.getpid():
+        log.info(f'OK! The my {name} process {pid=} is registered in DB')
+        return True
+    log.error(f'ERROR! The {name} process is registered in DB with {pid=} but my PID is {os.getpid()=}')
+    return False
+
 def check_process_is_running(sql_handler: SqlConnection, name: str, ) -> bool:
     running_app = sql_handler.get_all_rows_in_table('applications', select='pid', sql_filter=f'application="{name}"')
     if not running_app:
@@ -85,8 +98,13 @@ def check_process_is_running(sql_handler: SqlConnection, name: str, ) -> bool:
         log.info(f'The {name} process with {pid=} is already running, my_PID={os.getpid()=}')
         if Config.RESTART_RUNNING_APP and name == Config.scanner_app_name:
             log.info(f'{Config.RESTART_RUNNING_APP=} Terminate the {name} process with {pid=}')
-            res = subprocess.run(['taskkill.exe', '/F', '/PID', str(pid)], capture_output=True, text=True)
+            cmd: list[str] = ['taskkill.exe', '/F', '/T', '/PID', str(pid)]
+            log.info(' '.join(cmd))
+            res = subprocess.run(cmd, capture_output=True, text=True)
             log.debug(res.stdout + res.stderr)
+            if 'access is denied' in res.stderr.lower():
+                log.error(f'Access is denied to terminate the {name} process with {pid=}')
+                time.sleep(5)
             return False
         return True
     log.info(f'The {name} process with {pid=} is not running, {os.getpid()=}')
@@ -162,6 +180,9 @@ if __name__ == '__main__':
                 log.critical('There are no networks to scan!')
                 exit(1)
             for subnet_ab_str in networks_for_scan:
+                if not check_my_pid_is_registered(sql):
+                    log.error('ERROR! My PID is not registered in DB')
+                    os._exit(1)
                 log.info(f'start scanning the "{subnet_ab_str}" network')
                 subnet_ab = ipaddress.ip_network(subnet_ab_str)
                 if not subnet_ab.is_private:
